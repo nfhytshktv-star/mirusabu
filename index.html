@@ -145,6 +145,14 @@
     .stack-cube { width: var(--cube-size); height: var(--cube-size); flex: 0 0 var(--cube-size); position: relative; border-radius: 16px; transform: rotate(var(--tilt)); transition: transform .2s ease, width .25s ease, height .25s ease; filter: drop-shadow(0 5px 0 rgba(52,47,64,.18)) drop-shadow(0 10px 15px rgba(61,52,81,.16)); }
     .stack-cube:hover { transform: rotate(0deg) translateY(-2px); z-index: 2; }
     .stack-cube:focus-visible { outline: 3px solid #665b83; outline-offset: 4px; z-index: 2; }
+    .stack-cube.review-cancel-cube { z-index: 2; transform-origin: center bottom; }
+    .review-tower-visual.is-collapsing .stack-cards { transform-origin: center bottom; animation: review-tower-rumble 5.8s cubic-bezier(.45,0,.55,1) 1 both; }
+    .review-tower-visual.is-collapsing .review-cancel-cube { z-index: 10; animation: review-candidate-collapse 2.8s cubic-bezier(.35,.05,.75,.8) 1 both; animation-delay: var(--fall-delay, 1.25s); }
+    .review-tower-tools-right { display: flex; align-items: center; gap: 7px; }
+    .review-tower-replay { min-height: 32px; padding: 0 10px; border: 1px solid rgba(91,84,109,.2); border-radius: 10px; background: rgba(255,255,255,.8); color: #514b61; font-size: 10px; font-weight: 750; white-space: nowrap; }
+    .review-tower-replay:active { transform: translateY(1px); }
+    @keyframes review-tower-rumble { 0%, 100% { transform: rotate(0) translateX(0); } 13% { transform: rotate(-1deg) translateX(-2px); } 25% { transform: rotate(1.4deg) translateX(3px); } 39% { transform: rotate(-1.9deg) translateX(-4px); } 53% { transform: rotate(2.3deg) translateX(5px); } 66% { transform: rotate(-2.1deg) translateX(-5px); } 78% { transform: rotate(1.7deg) translateX(4px); } 90% { transform: rotate(-.9deg) translateX(-2px); } }
+    @keyframes review-candidate-collapse { 0%, 12% { transform: translate(0, 0) rotate(0) scale(1); opacity: 1; } 24% { transform: translate(-2px, 1px) rotate(-2deg) scale(1); opacity: 1; } 36% { transform: translate(3px, 5px) rotate(4deg) scale(1); opacity: 1; } 50% { transform: translate(-2px, 20px) rotate(-8deg) scale(1.01); opacity: 1; } 68% { transform: translate(4px, 56px) rotate(25deg) scale(.98); opacity: 1; } 100% { transform: translate(var(--fall-offset, 0px), var(--fall-distance, 120px)) rotate(58deg) scale(.72); opacity: 0; } }
     .stack-cube .service-logo { width: 100%; height: 100%; border-radius: inherit; font-size: max(9px, calc(var(--cube-size) * .3)); line-height: 1; border: 1px solid rgba(0,0,0,.08); }
     .stack-cube .service-logo.prime, .stack-cube .service-logo.disney { font-size: max(8px, calc(var(--cube-size) * .2)); }
     .stack-cube .service-logo.hulu { font-size: max(8px, calc(var(--cube-size) * .25)); }
@@ -234,6 +242,12 @@
     .review-finish-stat span, .review-finish-stat strong { display: block; }
     .review-finish-stat span { color: var(--muted); font-size: 10px; }
     .review-finish-stat strong { margin-top: 6px; font-size: 22px; }
+    .review-tower-legend { display: flex; flex-wrap: wrap; gap: 8px 14px; margin: 13px 0 2px; color: #5f625a; font-size: 10px; }
+    .review-tower-legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .review-tower-legend i { width: 8px; height: 8px; border-radius: 50%; background: #719365; }
+    .review-tower-legend .legend-unsure { background: #d1a24a; }
+    .review-tower-legend .legend-review { background: #d47c63; }
+    .review-tower-visual { margin-top: 12px; padding: 19px 16px 20px; border: 1px solid #dfd9ed; border-radius: 17px; background: linear-gradient(145deg, #f0edf8, #e7e3f1); }
     .review-savings-card { margin: 18px 0 12px; padding: 22px; border: 1px solid #d9e4d1; border-radius: 20px; background: linear-gradient(135deg, #edf5e8, #f7f8ef); color: var(--deep-green); text-align: center; }
     .review-savings-card > span { display: block; font-size: 11px; font-weight: 800; }
     .review-savings-card > strong { display: block; margin-top: 5px; font-size: clamp(34px, 8vw, 48px); line-height: 1.15; letter-spacing: -.06em; }
@@ -380,8 +394,11 @@
       .category-total { padding: 12px; align-items: flex-start; flex-direction: column; }
       .category-total strong { font-size: 13px; }
       .price-mode-options { grid-template-columns: 1fr; }
+      .review-tower-visual .tower-tools { flex-wrap: wrap; }
+      .review-tower-tools-right { margin-left: auto; flex-wrap: wrap; justify-content: flex-end; }
+      .review-tower-replay { padding: 0 8px; font-size: 9px; }
     }
-    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: .01ms !important; } }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: .01ms !important; } .review-tower-visual.is-collapsing .stack-cards, .review-tower-visual.is-collapsing .review-cancel-cube { animation: none !important; } }
   </style>
 </head>
 <body>
@@ -1005,7 +1022,8 @@ function renderReview() {
     const action = ['review', 'unsure'].includes(state) ? (guide ? `<a class="review-link" href="${guide}" target="_blank" rel="noopener noreferrer">${state === 'unsure' ? '解約方法を確認しておく' : genericAccountLink ? '公式ページで手続き方法を確認' : '公式の解約案内を見る'} ↗</a>` : `<p class="review-note">${state === 'unsure' ? '迷っている場合も、契約したサービスの公式サイトや請求元で解約方法を確認できます。' : '契約したサービスの公式サイト、またはApp Store・Google Playで請求元を確認して手続きしてください。'}</p>`) : '';
     return `<article class="review-service"><div class="review-service-main">${logoMarkup(item.name, item)}<div><p class="review-service-name">${escapeHtml(item.name)} <span class="review-result-tag">${stateLabel}</span></p><div class="review-service-meta">${escapeHtml(categoryLabels[item.category || 'video'] || 'サブスク')} · ${escapeHtml(reviewFrequencyLabel(reviewFrequency[item.id]))} · 月額換算 ${yen(monthlyPrice(item))}</div>${action}</div></div></article>`;
   }).join('');
-  reviewStage.innerHTML = `${nav}<div class="review-card"><p class="eyebrow">YOUR REVIEW</p><h1>あなたに合った形に、<br>整えていこう。</h1><p class="hero-copy">回答した内容をもとに、見直し候補と節約の目安をまとめました。</p><div class="review-savings-card"><span>「見直したい」をすべて解約した場合</span><strong>${yen(possibleSaving)}<small> / 月</small></strong><p>見直しができれば、毎月の支出をこれだけ節約できそうです。</p><p class="review-savings-annual">年間換算 ${yen(possibleAnnualSaving)} · 契約内容や解約時期で異なる目安です</p></div><div class="review-finish-summary"><div class="review-finish-stat"><span>見直したい</span><strong>${reconsider.length}件</strong></div><div class="review-finish-stat"><span>迷っている</span><strong>${unsure.length}件</strong></div></div><section class="review-section"><h2>診断結果</h2><p>選んだ気持ちを一覧にしました。見直す場合は各社の公式案内から手続きしてください。</p>${rows || '<p class="review-note">登録されたサービスはありません。</p>'}</section><p class="review-note">金額は各サービスの月額換算を合計した目安です。実際の節約額は契約内容や解約時期によって異なります。公式案内でも、App Store・Google Play・通信会社など登録した請求元から手続きが必要な場合があります。見直し候補のサービス名と請求元を確認してから進めてね。</p><div class="review-actions"><button class="button button-secondary" type="button" data-review-back>回答を見直す</button><button class="button button-primary" type="button" data-review-close>まとめ画面に戻る</button></div></div>`;
+  reviewStage.innerHTML = `${nav}<div class="review-card"><p class="eyebrow">YOUR REVIEW</p><h1>あなたに合った形に、<br>整えていこう。</h1><p class="hero-copy">回答した内容をもとに、見直し候補と節約の目安をまとめました。</p><div class="review-savings-card"><span>「見直したい」をすべて解約した場合</span><strong>${yen(possibleSaving)}<small> / 月</small></strong><p>見直しができれば、毎月の支出をこれだけ節約できそうです。</p><p class="review-savings-annual">年間換算 ${yen(possibleAnnualSaving)} · 契約内容や解約時期で異なる目安です</p></div><div class="review-finish-summary"><div class="review-finish-stat"><span>見直したい</span><strong>${reconsider.length}件</strong></div><div class="review-finish-stat"><span>迷っている</span><strong>${unsure.length}件</strong></div></div><section class="review-section review-tower-section"><h2>診断をもとにした見直しタワー</h2><p>下から「続けたい」、中段に「迷っている」、上に「見直したい」を積みました。縦軸は月額合計、四角の大きさは各サービスの月額に比例します。</p><div class="review-tower-legend"><span><i></i>続けたい・重要度高（下）</span><span><i class="legend-unsure"></i>迷っている（中）</span><span><i class="legend-review"></i>見直したい（上・ゆらゆら）</span></div><div class="stack-visual review-tower-visual" id="reviewTowerVisual"></div></section><section class="review-section"><h2>診断結果</h2><p>選んだ気持ちを一覧にしました。見直す場合は各社の公式案内から手続きしてください。</p>${rows || '<p class="review-note">登録されたサービスはありません。</p>'}</section><p class="review-note">金額は各サービスの月額換算を合計した目安です。実際の節約額は契約内容や解約時期によって異なります。公式案内でも、App Store・Google Play・通信会社など登録した請求元から手続きが必要な場合があります。見直し候補のサービス名と請求元を確認してから進めてね。</p><div class="review-actions"><button class="button button-secondary" type="button" data-review-back>回答を見直す</button><button class="button button-primary" type="button" data-review-close>まとめ画面に戻る</button></div></div>`;
+  renderReviewTower();
 }
 function updateServiceSelectionSummary() {
   const serviceCount = selectedCountForActiveCategory();
@@ -1083,12 +1101,100 @@ function renderResults() {
   initTowerZoom();
 }
 
-function initTowerZoom() {
-  const viewport = $('#towerViewport');
-  const canvas = $('#towerCanvas');
-  const chart = $('#towerChart');
-  const stackVisual = $('#stackVisual');
-  const tooltip = $('#towerTooltip');
+function renderReviewTower() {
+  const visual = $('#reviewTowerVisual');
+  if (!visual || !entries.length) return;
+  const tiers = { review: [], unsure: [], keep: [] };
+  for (const item of entries) {
+    const decision = reviewDecisions[item.id] || 'keep';
+    tiers[tiers[decision] ? decision : 'keep'].push(item);
+  }
+  const byPriceDescending = (a, b) => monthlyPrice(b) - monthlyPrice(a);
+  const ordered = [...tiers.review.sort(byPriceDescending), ...tiers.unsure.sort(byPriceDescending), ...tiers.keep.sort(byPriceDescending)];
+  const total = ordered.reduce((sum, item) => sum + monthlyPrice(item), 0);
+  const maxCubePrice = Math.max(...ordered.map(item => monthlyPrice(item)));
+  const chartWidth = Math.min(900, Math.max(192, visual.clientWidth - 32));
+  const pileWidth = Math.max(110, chartWidth - 82);
+  const step = total <= 3500 ? 500 : total <= 8500 ? 1000 : 2000;
+  const maxTick = Math.ceil(total / step) * step;
+  const availableChartHeight = Math.max(220, window.innerHeight - 270);
+  const heightFitScale = Math.max(0.001, (availableChartHeight - BASE_HEIGHT) / maxTick);
+  const pixelScale = Math.min(0.075, pileWidth / Math.max(maxCubePrice, 1), heightFitScale);
+  const chartHeight = maxTick * pixelScale + BASE_HEIGHT;
+  const totalHeight = total * pixelScale;
+  const marks = Array.from({ length: Math.round(maxTick / step) + 1 }, (_, index) => index * step);
+  const axisMarks = marks.map(value => `<span class="axis-mark" style="bottom:${BASE_HEIGHT + value * pixelScale}px">${yen(value)}</span>`).join('');
+  const gridLines = marks.map(value => `<span class="tower-grid-line" style="bottom:${BASE_HEIGHT + value * pixelScale}px"></span>`).join('');
+  let reviewIndex = 0;
+  const cubes = ordered.map((item, index) => {
+    const decision = reviewDecisions[item.id] || 'keep';
+    const side = monthlyPrice(item) * pixelScale;
+    const tilt = index % 2 ? '1deg' : '-1deg';
+    const wobble = decision === 'review' ? ' review-cancel-cube' : '';
+    const fallIndex = decision === 'review' ? reviewIndex++ : -1;
+    const belowHeight = ordered.slice(index + 1).reduce((sum, below) => sum + monthlyPrice(below) * pixelScale, 0);
+    const fallOffset = fallIndex < 0 ? 0 : (fallIndex % 2 === 0 ? -1 : 1) * (22 + (fallIndex % 3) * 9);
+    const animationStyle = fallIndex < 0 ? '' : `;--fall-distance:${belowHeight + side + 56}px;--fall-offset:${fallOffset}px;--fall-delay:${(1.25 + fallIndex * 0.34).toFixed(2)}s`;
+    const label = `${item.name}、${decision === 'review' ? '見直したい' : decision === 'unsure' ? '迷っている' : '続けたい'}、月額換算 ${yen(monthlyPrice(item))}`;
+    return `<div class="stack-cube${wobble}" style="--cube-size:${side}px;--tilt:${tilt}${animationStyle}" data-service-name="${escapeHtml(item.name)}" data-service-price="${yen(monthlyPrice(item))}" tabindex="0" role="img" aria-label="${escapeHtml(label)}" aria-describedby="reviewTowerTooltip">${logoMarkup(item.name, item)}</div>`;
+  }).join('');
+  visual.innerHTML = `<div class="stack-glow"></div><div class="tower-tools" aria-label="見直しタワーの操作"><span class="tower-gesture-hint">＋・−で拡大・縮小</span><div class="review-tower-tools-right"><button type="button" class="review-tower-replay" data-review-tower-replay aria-label="タワーの揺れと崩れる演出をもう一度再生">↻ もう一度揺らす</button><div class="tower-zoom-controls"><button type="button" data-zoom-out aria-label="見直しタワーを縮小">−</button><button type="button" data-zoom-reset aria-label="倍率をリセット">100%</button><button type="button" data-zoom-in aria-label="見直しタワーを拡大">＋</button></div></div></div><div class="tower-viewport" id="reviewTowerViewport" style="height:${chartHeight}px" aria-label="診断結果を反映したサブスクタワー。縦軸は月額合計です"><div class="tower-canvas" id="reviewTowerCanvas" data-chart-width="${chartWidth}" data-chart-height="${chartHeight}"><div class="tower-chart" id="reviewTowerChart" style="width:${chartWidth}px;height:${chartHeight}px;--base-height:${BASE_HEIGHT}px"><div class="tower-axis" style="height:${chartHeight}px"><span class="axis-title">月額合計</span>${axisMarks}</div><div class="tower-pile" style="height:${chartHeight}px">${gridLines}<div class="stack-cards" style="height:${totalHeight}px;bottom:${BASE_HEIGHT}px">${cubes}</div><div class="stack-base"></div></div></div></div></div><div class="tower-tooltip" id="reviewTowerTooltip" role="tooltip" hidden></div><div class="stack-caption" data-review-tower-caption>目盛り間隔 ${yen(step)} · アイコンの大きさは登録時の月額に比例</div>`;
+  const candidateCubes = [...visual.querySelectorAll('.review-cancel-cube')];
+  const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+  const replayButton = visual.querySelector('[data-review-tower-replay]');
+  const cards = visual.querySelector('.stack-cards');
+  const caption = visual.querySelector('[data-review-tower-caption]');
+  const originalCaption = caption?.textContent || '';
+  let towerObserver = null;
+  const playCollapse = (restart = false) => {
+    if (restart) {
+      visual.classList.remove('is-collapsing');
+      candidateCubes.forEach(cube => { cube.hidden = false; });
+      if (cards) cards.style.height = `${totalHeight}px`;
+      if (caption) caption.textContent = originalCaption;
+      void visual.offsetWidth;
+    }
+    visual.classList.add('is-collapsing');
+  };
+  if (!prefersReducedMotion) {
+    replayButton?.addEventListener('click', () => {
+      towerObserver?.disconnect();
+      playCollapse(true);
+    });
+    for (const cube of candidateCubes) {
+      cube.addEventListener('animationend', event => {
+        if (event.animationName !== 'review-candidate-fall') return;
+        cube.hidden = true;
+        if (!candidateCubes.every(candidate => candidate.hidden)) return;
+        const remainingTotal = ordered
+          .filter(item => (reviewDecisions[item.id] || 'keep') !== 'review')
+          .reduce((sum, item) => sum + monthlyPrice(item), 0);
+        if (cards) cards.style.height = `${remainingTotal * pixelScale}px`;
+        if (caption) caption.textContent = `見直し候補を外した場合の残り：${yen(remainingTotal)} / 月（診断時の合計 ${yen(total)} / 月）`;
+      });
+    }
+    if ('IntersectionObserver' in window) {
+      towerObserver = new IntersectionObserver((observations, currentObserver) => {
+        if (!observations.some(observation => observation.isIntersecting)) return;
+        playCollapse();
+        currentObserver.disconnect();
+      }, { threshold: 0.2 });
+      towerObserver.observe(visual);
+    } else {
+      requestAnimationFrame(() => playCollapse());
+    }
+  } else if (replayButton) {
+    replayButton.hidden = true;
+  }
+  initTowerZoom('reviewTower');
+}
+
+function initTowerZoom(prefix = 'tower') {
+  const viewport = $(`#${prefix}Viewport`);
+  const canvas = $(`#${prefix}Canvas`);
+  const chart = $(`#${prefix}Chart`);
+  const stackVisual = viewport?.parentElement;
+  const tooltip = stackVisual?.querySelector('.tower-tooltip');
   if (!viewport || !canvas || !chart || !stackVisual || !tooltip) return;
   const defaultZoom = 1;
   let zoom = defaultZoom;
@@ -1102,7 +1208,9 @@ function initTowerZoom() {
     canvas.style.width = `${width * zoom}px`;
     canvas.style.height = `${height * zoom}px`;
     chart.style.transform = `scale(${zoom})`;
-    const focusX = (width + 82) / 2;
+    const axisWidth = chart.querySelector('.tower-axis')?.getBoundingClientRect().width || 72;
+    const columnGap = Number.parseFloat(window.getComputedStyle(chart).columnGap) || 10;
+    const focusX = (width + axisWidth + columnGap) / 2;
     const focusY = height / 2;
     chart.style.transformOrigin = `${focusX}px ${focusY}px`;
     chart.style.left = `${focusX * (zoom - 1)}px`;
@@ -1659,9 +1767,12 @@ resultStage.addEventListener('click', event => {
 });
 let towerResizeTimer = 0;
 window.addEventListener('resize', () => {
-  if (!showResults) return;
+  if (!showResults && !(showReview && reviewPage === 'finish')) return;
   window.clearTimeout(towerResizeTimer);
-  towerResizeTimer = window.setTimeout(renderResults, 120);
+  towerResizeTimer = window.setTimeout(() => {
+    if (showResults) renderResults();
+    else if (showReview && reviewPage === 'finish') renderReview();
+  }, 120);
 }, { passive: true });
 renderApp();
 
