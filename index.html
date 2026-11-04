@@ -1,0 +1,1670 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f3ee">
+  <title>みるサブ — サブスクタワーで支出を見える化</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #20231f;
+      --muted: #747970;
+      --paper: #f5f3ee;
+      --card: #fffefa;
+      --line: #e7e5dc;
+      --green: #b9e1a2;
+      --deep-green: #31583a;
+      --lavender: #ddd8f3;
+      --orange: #f4b47f;
+      --shadow: 0 18px 45px rgba(44, 48, 39, .08);
+      font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Noto Sans JP", Meiryo, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-width: 320px; background: var(--paper); color: var(--ink); }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    .shell { width: min(1160px, calc(100% - 48px)); margin: 0 auto; }
+    .topbar { height: 82px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); }
+    .topbar[hidden] { display: none; }
+    .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); font-weight: 850; letter-spacing: -.04em; font-size: 21px; }
+    .brand-mark { width: 31px; height: 31px; border-radius: 10px 10px 10px 3px; display: grid; place-items: center; background: var(--deep-green); color: white; font-size: 16px; transform: rotate(-5deg); }
+    .top-note { color: var(--muted); font-size: 12px; display: flex; align-items: center; gap: 7px; }
+    .save-dot { width: 7px; height: 7px; background: #71a765; border-radius: 50%; }
+    main { padding: 45px 0 72px; }
+    .eyebrow { margin: 0 0 13px; color: var(--deep-green); font-size: 11px; font-weight: 800; letter-spacing: .14em; }
+    h1 { font-size: clamp(32px, 5.6vw, 58px); line-height: 1.12; letter-spacing: -.075em; margin: 0; font-weight: 850; }
+    .hero-copy { color: var(--muted); font-size: 14px; line-height: 1.8; margin: 15px 0 0; }
+    .hero { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 34px; }
+    .hero-actions { display: flex; gap: 10px; flex: 0 0 auto; }
+    .button { min-height: 45px; border: 0; border-radius: 14px; padding: 0 18px; font-weight: 750; font-size: 13px; transition: transform .16s ease, box-shadow .16s ease; }
+    .button:hover { transform: translateY(-2px); box-shadow: 0 8px 18px rgba(32,35,31,.12); }
+    .button-primary { background: var(--deep-green); color: white; }
+    .button-secondary { background: #e9e8df; color: var(--ink); }
+    .button-reset { background: #f7e9e6; color: #9a443c; }
+    .welcome-stage { min-height: calc(100vh - 117px); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; text-align: center; }
+    .welcome-stage h1 { font-size: clamp(44px, 8vw, 72px); letter-spacing: -.08em; }
+    .welcome-copy { max-width: 350px; margin: -8px 0 4px; color: var(--muted); font-size: 14px; line-height: 1.8; }
+    .welcome-start { min-width: 190px; min-height: 58px; border-radius: 18px; font-size: 16px; }
+    .welcome-start span { margin-left: 8px; }
+    .summary-grid { display: grid; grid-template-columns: 1.4fr .8fr .8fr; gap: 13px; margin-bottom: 16px; }
+    .summary-card { background: var(--card); border: 1px solid var(--line); border-radius: 22px; padding: 21px 23px; min-height: 130px; }
+    .summary-card.primary { background: var(--green); border-color: transparent; position: relative; overflow: hidden; }
+    .summary-card.primary::after { content: ""; position: absolute; width: 150px; height: 150px; border: 1px solid rgba(49,88,58,.16); border-radius: 50%; right: -30px; bottom: -96px; box-shadow: 0 0 0 18px rgba(49,88,58,.04), 0 0 0 38px rgba(49,88,58,.035); }
+    .summary-label { color: #60675d; font-size: 11px; font-weight: 750; letter-spacing: .03em; }
+    .primary .summary-label { color: #36523b; }
+    .summary-value { font-weight: 850; font-size: 31px; letter-spacing: -.06em; margin-top: 13px; line-height: 1; }
+    .primary .summary-value { font-size: 38px; }
+    .summary-unit { font-size: 13px; font-weight: 700; letter-spacing: 0; margin-left: 4px; }
+    .summary-foot { color: #687069; font-size: 10px; margin-top: 11px; }
+    .category-breakdown { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin: -3px 0 19px; }
+    .category-total { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 18px; background: var(--card); border: 1px solid var(--line); border-radius: 16px; }
+    .category-total span { color: var(--muted); font-size: 10px; font-weight: 750; }
+    .category-total strong { font-size: 15px; letter-spacing: -.03em; white-space: nowrap; }
+    .content-grid { display: grid; grid-template-columns: 1fr; gap: 18px; align-items: stretch; }
+    .panel { background: var(--card); border: 1px solid var(--line); border-radius: 23px; overflow: hidden; }
+    .panel-head { padding: 21px 23px 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .panel-title { margin: 0; font-size: 16px; letter-spacing: -.04em; font-weight: 850; }
+    .panel-subtitle { margin: 5px 0 0; color: var(--muted); font-size: 11px; }
+    .count-pill { font-size: 10px; padding: 6px 10px; border-radius: 99px; color: var(--deep-green); background: #edf4e8; font-weight: 800; white-space: nowrap; }
+    .subscription-list { padding: 0 13px 13px; }
+    .subscription-row { display: grid; grid-template-columns: 46px minmax(0,1fr) auto 32px; align-items: center; gap: 12px; border-top: 1px solid #efeee8; padding: 14px 10px; }
+    .service-logo { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 13px; font-weight: 900; font-size: 12px; letter-spacing: -.06em; color: white; box-shadow: inset 0 0 0 1px rgba(255,255,255,.16); flex: 0 0 auto; }
+    .service-logo.netflix { background: #151515; color: #e50914; font-size: 23px; font-family: Georgia, serif; }
+    .service-logo.prime { background: #12283e; color: #74c8ef; font-size: 10px; }
+    .service-logo.disney { background: #101b49; color: white; font-size: 10px; }
+    .service-logo.unext { background: #fff; color: #5c9a40; border: 1px solid #e4e8df; }
+    .service-logo.hulu { background: #1ce783; color: #10251c; font-size: 14px; }
+    .service-logo.apple { background: #1c1c1e; color: white; font-size: 17px; }
+    .service-logo.abema { background: #f7d45d; color: #29231c; }
+    .service-logo.danime { background: #e8f0ff; color: #4778c7; }
+    .service-logo.dazn { background: #111; color: #fff; font-size: 18px; letter-spacing: -.09em; }
+    .service-logo.wowow { background: #087c92; color: #fff; font-size: 12px; letter-spacing: -.06em; }
+    .service-logo.spotify { background: #1ed760; color: #102918; font-size: 20px; }
+    .service-logo.applemusic { background: #f34b69; color: #fff; font-size: 20px; }
+    .service-logo.ytmusic { background: #ff1744; color: #fff; font-size: 17px; }
+    .service-logo.amazonmusic { background: #15283d; color: #45d4d0; font-size: 20px; }
+    .service-logo.linemusic { background: #06c755; color: #fff; font-size: 19px; }
+    .service-logo.awa { background: #30353b; color: #fff; font-size: 10px; letter-spacing: -.05em; }
+    .service-logo.nintendo { background: #e60012; color: white; font-size: 18px; }
+    .service-logo.playstation { background: #003791; color: white; font-size: 15px; }
+    .service-logo.xbox { background: #107c10; color: white; font-size: 19px; }
+    .service-logo.applearcade { background: #1c1c1e; color: white; font-size: 21px; }
+    .service-logo.adobe { background: #ed1c24; color: white; font-size: 20px; }
+    .service-logo.microsoft { background: #f3f5f7; color: #2767b1; font-size: 18px; }
+    .service-logo.applecreator { background: linear-gradient(135deg, #282a44, #5c3c82); color: #fff; font-size: 21px; }
+    .service-logo.bookwalker { background: #19a0df; color: white; font-size: 19px; }
+    .service-logo.cmoa { background: #f5eaf2; color: #c6377d; font-size: 17px; }
+    .service-logo.asahi { background: #176b45; color: #fff; font-size: 16px; }
+    .service-logo.mainichi { background: #163a5b; color: #fff; font-size: 16px; }
+    .service-logo.nikkei { background: #b9242b; color: #fff; font-size: 16px; }
+    .service-logo.sankei { background: #b42b32; color: #fff; font-size: 16px; }
+    .service-logo.yomiuri { background: #f2eeee; color: #a5232c; font-size: 16px; }
+    .service-logo.yakult { background: #e6f2dc; color: #c22032; font-size: 17px; }
+    .service-logo.water { background: #deeff8; color: #187ca8; font-size: 16px; }
+    .service-logo.lotion { background: #e5dff1; color: #66558a; font-size: 17px; }
+    .service-logo.flowers { background: #f3dce8; color: #ab4d7a; font-size: 18px; }
+    .service-logo.nosh { background: #d9edcf; color: #346a32; font-size: 11px; }
+    .service-logo.newspaper { background: #e8e6dc; color: #474a42; font-size: 17px; }
+    .service-logo.custom { background: var(--lavender); color: #403963; }
+    .service-name { font-size: 13px; font-weight: 800; margin: 0 0 4px; }
+    .service-meta { color: var(--muted); font-size: 10px; }
+    .service-price { text-align: right; white-space: nowrap; }
+    .service-price strong { font-size: 14px; letter-spacing: -.03em; }
+    .service-price span { display: block; color: var(--muted); font-size: 9px; margin-top: 3px; }
+    .row-menu { border: 0; width: 30px; height: 32px; border-radius: 10px; color: #81867c; background: transparent; font-size: 18px; }
+    .row-menu:hover { background: #f2f1eb; color: var(--ink); }
+    .empty-state { padding: 34px 22px 41px; text-align: center; border-top: 1px solid #efeee8; }
+    .empty-graphic { width: 74px; height: 74px; margin: 0 auto 14px; border-radius: 23px; display: grid; place-items: center; background: #eef4e9; font-size: 28px; transform: rotate(-5deg); }
+    .empty-state strong { font-size: 14px; display: block; }
+    .empty-state p { color: var(--muted); font-size: 11px; line-height: 1.7; margin: 7px 0 15px; }
+    .empty-state .button { min-height: 38px; font-size: 11px; }
+    .stack-panel { background: linear-gradient(145deg, #f0edf8, #e7e3f1); border-color: #dfd9ed; align-self: start; position: relative; box-shadow: 0 14px 34px rgba(68,55,97,.08); }
+    .stack-panel .panel-head { position: relative; z-index: 1; padding: 25px 32px 16px; }
+    .stack-panel .panel-title { font-size: 20px; }
+    .stack-panel .panel-subtitle { font-size: 12px; }
+    .stack-visual { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 24px 32px 28px; position: relative; overflow: visible; }
+    .stack-glow { position: absolute; width: min(600px, 78vw); height: min(600px, 78vw); border-radius: 50%; background: radial-gradient(circle, rgba(255,255,255,.75), rgba(255,255,255,0)); top: 45px; left: 50%; transform: translateX(-50%); pointer-events: none; }
+    .stack-empty { position: relative; text-align: center; margin: auto; color: #7a7489; font-size: 11px; line-height: 1.8; }
+    .stack-empty span { display: block; font-size: 34px; margin-bottom: 7px; }
+    .tower-tools { width: 100%; max-width: 900px; display: flex; align-items: center; justify-content: space-between; gap: 12px; position: relative; z-index: 1; margin: 0 0 12px; }
+    .tower-gesture-hint { color: #696478; font-size: 10px; }
+    .tower-zoom-controls { display: flex; align-items: center; gap: 5px; flex: 0 0 auto; }
+    .tower-zoom-controls button { min-width: 34px; height: 32px; border: 1px solid rgba(91,84,109,.2); border-radius: 10px; background: rgba(255,255,255,.8); color: #514b61; font-size: 14px; font-weight: 800; }
+    .tower-zoom-controls button[data-zoom-reset] { min-width: 52px; font-size: 10px; }
+    .tower-viewport { width: 100%; height: auto; min-height: 0; overflow: auto; position: relative; z-index: 1; border-radius: 12px; overscroll-behavior-x: contain; overscroll-behavior-y: auto; touch-action: auto; scrollbar-color: rgba(91,84,109,.35) transparent; scrollbar-width: thin; }
+    .tower-canvas { position: relative; margin: 0 auto; }
+    .tower-chart { max-width: none; display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 10px; position: absolute; z-index: 1; top: 0; left: 0; transform-origin: center center; }
+    .tower-axis { position: relative; border-right: 1px solid #8f899d; }
+    .axis-title { position: absolute; top: -21px; left: 0; color: #696478; font-size: 11px; font-weight: 800; white-space: nowrap; }
+    .axis-mark { position: absolute; right: 0; display: flex; align-items: center; transform: translateY(50%); color: #696478; font-size: 10px; line-height: 1; white-space: nowrap; }
+    .axis-mark::after { content: ""; display: block; width: 6px; border-top: 1px solid #8f899d; margin-left: 5px; }
+    .tower-pile { position: relative; min-width: 0; }
+    .tower-grid-line { position: absolute; left: 0; right: 0; border-top: 1px dashed rgba(91,84,109,.22); pointer-events: none; }
+    .stack-cards { width: 100%; position: absolute; z-index: 1; left: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; }
+    .stack-cube { width: var(--cube-size); height: var(--cube-size); flex: 0 0 var(--cube-size); position: relative; border-radius: 16px; transform: rotate(var(--tilt)); transition: transform .2s ease, width .25s ease, height .25s ease; filter: drop-shadow(0 5px 0 rgba(52,47,64,.18)) drop-shadow(0 10px 15px rgba(61,52,81,.16)); }
+    .stack-cube:hover { transform: rotate(0deg) translateY(-2px); z-index: 2; }
+    .stack-cube:focus-visible { outline: 3px solid #665b83; outline-offset: 4px; z-index: 2; }
+    .stack-cube .service-logo { width: 100%; height: 100%; border-radius: inherit; font-size: max(9px, calc(var(--cube-size) * .3)); line-height: 1; border: 1px solid rgba(0,0,0,.08); }
+    .stack-cube .service-logo.prime, .stack-cube .service-logo.disney { font-size: max(8px, calc(var(--cube-size) * .2)); }
+    .stack-cube .service-logo.hulu { font-size: max(8px, calc(var(--cube-size) * .25)); }
+    .stack-cube .service-logo.netflix { font-size: max(15px, calc(var(--cube-size) * .42)); }
+    .stack-cube .service-logo.apple { font-size: max(14px, calc(var(--cube-size) * .36)); }
+    .tower-tooltip { position: absolute; z-index: 20; max-width: min(260px, calc(100vw - 24px)); padding: 9px 12px; border-radius: 12px; background: #373343; color: #fff; box-shadow: 0 8px 22px rgba(28,24,39,.25); text-align: center; font-size: 11px; line-height: 1.5; pointer-events: none; transform: translate(-50%, -100%); }
+    .tower-tooltip[hidden] { display: none; }
+    .tower-tooltip strong, .tower-tooltip span { display: block; }
+    .tower-tooltip span { margin-top: 2px; color: #e7e1f2; font-size: 10px; }
+    .tower-tooltip::after { content: ""; position: absolute; top: 100%; left: 50%; border: 6px solid transparent; border-top-color: #373343; transform: translateX(-50%); }
+    .tower-tooltip.below { transform: translate(-50%, 0); }
+    .tower-tooltip.below::after { top: auto; bottom: 100%; border-top-color: transparent; border-bottom-color: #373343; }
+    .stack-base { position: absolute; left: 5%; right: 5%; bottom: 0; height: var(--base-height); border-radius: 4px 4px 8px 8px; background: #b8b1c8; box-shadow: 0 6px 0 #a39bb6; z-index: 1; }
+    .stack-caption { margin-top: 13px; color: #696478; font-size: 11px; position: relative; z-index: 1; }
+    .food-source-note, .estimate-detail { color: var(--muted); font-size: 10px; line-height: 1.7; }
+    .food-source-note a, .estimate-detail a { color: var(--deep-green); font-weight: 750; }
+    .price-mode-options { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 9px; margin-top: 18px; }
+    .price-mode-choice { min-height: 68px; border: 1px solid var(--line); border-radius: 14px; padding: 12px; display: flex; align-items: center; gap: 10px; background: #fff; cursor: pointer; }
+    .price-mode-choice.selected { background: #eff5e9; border-color: #89a87e; box-shadow: inset 0 0 0 1px #89a87e; }
+    .price-mode-choice input { accent-color: var(--deep-green); flex: 0 0 auto; }
+    .price-mode-choice strong, .price-mode-choice small { display: block; }
+    .price-mode-choice strong { font-size: 11px; }
+    .price-mode-choice small { color: var(--muted); margin-top: 4px; font-size: 9px; }
+    .food-choice .choice-price { white-space: normal; }
+    .catalog { margin-top: 17px; }
+    .catalog-head { display: flex; justify-content: space-between; align-items: end; gap: 15px; padding: 0 3px 12px; }
+    .catalog-head h2 { margin: 0; font-size: 15px; letter-spacing: -.04em; }
+    .catalog-head p { margin: 5px 0 0; color: var(--muted); font-size: 10px; }
+    .catalog-link { border: 0; background: transparent; color: var(--deep-green); font-size: 11px; font-weight: 800; padding: 5px 0; }
+    .catalog-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 9px; }
+    .catalog-item { min-height: 78px; border: 1px solid var(--line); border-radius: 17px; background: var(--card); display: flex; align-items: center; text-align: left; gap: 10px; padding: 12px; color: var(--ink); transition: border-color .15s, transform .15s, box-shadow .15s; }
+    .catalog-item:hover { transform: translateY(-2px); border-color: #b5c7aa; box-shadow: 0 8px 18px rgba(44,48,39,.07); }
+    .catalog-item.selected { background: #eef4e9; border-color: #c8d8bd; cursor: default; }
+    .catalog-item.selected:hover { transform: none; box-shadow: none; }
+    .catalog-item.selected .catalog-add { color: var(--deep-green); }
+    .catalog-item .service-logo { width: 37px; height: 37px; border-radius: 11px; font-size: 10px; }
+    .catalog-item .service-logo.netflix { font-size: 20px; }
+    .catalog-name { display: block; font-size: 11px; font-weight: 800; line-height: 1.35; }
+    .catalog-add { color: #92968d; font-size: 9px; display: block; margin-top: 4px; }
+    .footer-note { text-align: center; color: #8a8d84; font-size: 10px; margin-top: 25px; }
+    .review-invite { margin-top: 34px; padding: clamp(24px, 5vw, 44px); border: 1px solid #d9dfd3; border-radius: 26px; background: linear-gradient(135deg, #edf4e8, #f8f7f1 72%); text-align: center; }
+    .review-invite .eyebrow { margin-bottom: 10px; }
+    .review-invite h2 { margin: 0; font-size: clamp(22px, 4vw, 32px); letter-spacing: -.06em; }
+    .review-invite p { max-width: 520px; margin: 10px auto 20px; color: var(--muted); font-size: 12px; line-height: 1.8; }
+    .review-stage { width: min(900px, 100%); margin: 0 auto; padding: 8px 0 42px; }
+    .review-nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 22px; }
+    .review-card { padding: clamp(22px, 5vw, 42px); border: 1px solid var(--line); border-radius: 25px; background: var(--card); box-shadow: var(--shadow); }
+    .review-card h1 { font-size: clamp(30px, 5vw, 48px); }
+    .review-intro { text-align: center; }
+    .review-intro .eyebrow { margin-bottom: 14px; }
+    .review-intro-copy { max-width: 600px; margin: 14px auto 0; color: var(--muted); line-height: 1.9; font-size: 13px; }
+    .review-total { margin: 24px auto; padding: 18px; max-width: 310px; border-radius: 18px; background: #eff5e9; color: var(--deep-green); }
+    .review-total span, .review-total strong { display: block; }
+    .review-total span { font-size: 11px; font-weight: 750; }
+    .review-total strong { margin-top: 5px; font-size: 30px; letter-spacing: -.05em; }
+    .review-choice-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; max-width: 650px; margin: 25px auto 0; }
+    .review-choice { min-height: 94px; padding: 17px; border: 1px solid var(--line); border-radius: 18px; background: #fff; color: var(--ink); text-align: left; }
+    .review-choice:hover { border-color: #94ac88; background: #f3f7ef; }
+    .review-choice strong, .review-choice span { display: block; }
+    .review-choice strong { font-size: 15px; }
+    .review-choice span { margin-top: 6px; color: var(--muted); font-size: 10px; line-height: 1.6; }
+    .review-section { margin-top: 18px; padding: 20px; border: 1px solid var(--line); border-radius: 19px; background: var(--card); }
+    .review-section h2 { margin: 0; font-size: 17px; letter-spacing: -.04em; }
+    .review-section > p { margin: 6px 0 14px; color: var(--muted); font-size: 11px; line-height: 1.7; }
+    .review-service { display: grid; grid-template-columns: minmax(170px, 1fr) auto; gap: 16px; align-items: center; padding: 14px 0; border-top: 1px solid #efeee8; }
+    .review-service-main { display: flex; align-items: center; gap: 11px; min-width: 0; }
+    .review-service-main > div:last-child { min-width: 0; }
+    .review-service-name { margin: 0; font-size: 12px; font-weight: 850; }
+    .review-service-meta { margin-top: 4px; color: var(--muted); font-size: 10px; line-height: 1.5; }
+    .review-frequency-options, .review-decision-options { display: flex; flex-wrap: wrap; gap: 6px; }
+    .review-frequency-option, .review-decision-option { min-height: 34px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 11px; color: #5c6258; background: #fff; font-size: 10px; font-weight: 750; }
+    .review-frequency-option.selected, .review-decision-option.selected { color: var(--deep-green); border-color: #90a984; background: #edf4e8; box-shadow: inset 0 0 0 1px #90a984; }
+    .review-actions { display: flex; justify-content: space-between; gap: 10px; margin-top: 18px; }
+    .review-actions .button:disabled { opacity: .45; cursor: not-allowed; transform: none; box-shadow: none; }
+    .review-compare-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 9px; }
+    .review-compare-group { margin-top: 13px; }
+    .review-compare-group h3 { margin: 0 0 8px; color: var(--deep-green); font-size: 11px; }
+    .review-compare-item { padding: 12px; border: 1px solid #ecebe4; border-radius: 14px; background: #fff; }
+    .review-compare-item .review-service-main { align-items: flex-start; }
+    .review-compare-feature { display: flex; align-items: flex-start; gap: 7px; margin: 10px 0 0 55px; }
+    .review-compare-feature span { flex: none; padding: 2px 6px; border-radius: 6px; background: #f1f4eb; color: var(--deep-green); font-size: 9px; font-weight: 800; }
+    .review-compare-feature p { margin: 0; color: #555d52; font-size: 10px; line-height: 1.65; }
+    .review-compare-price { margin: 10px 0 0 55px; color: var(--deep-green); font-size: 12px; font-weight: 850; }
+    .review-compare-disclaimer { margin: 10px 0 0 !important; font-size: 9px !important; }
+    .review-finish-summary { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; margin: 18px 0; }
+    .review-finish-stat { padding: 16px; border-radius: 16px; background: #f3f5ee; }
+    .review-finish-stat span, .review-finish-stat strong { display: block; }
+    .review-finish-stat span { color: var(--muted); font-size: 10px; }
+    .review-finish-stat strong { margin-top: 6px; font-size: 22px; }
+    .review-savings-card { margin: 18px 0 12px; padding: 22px; border: 1px solid #d9e4d1; border-radius: 20px; background: linear-gradient(135deg, #edf5e8, #f7f8ef); color: var(--deep-green); text-align: center; }
+    .review-savings-card > span { display: block; font-size: 11px; font-weight: 800; }
+    .review-savings-card > strong { display: block; margin-top: 5px; font-size: clamp(34px, 8vw, 48px); line-height: 1.15; letter-spacing: -.06em; }
+    .review-savings-card > strong small { font-size: 14px; letter-spacing: 0; }
+    .review-savings-card > p { margin: 7px 0 0; color: #66715f; font-size: 10px; line-height: 1.6; }
+    .review-savings-card > p.review-savings-annual { margin-top: 3px; color: #7b8474; font-size: 9px; }
+    .review-link { display: inline-block; margin-top: 8px; color: var(--deep-green); font-size: 10px; font-weight: 800; }
+    .review-result-tag { display: inline-block; margin-left: 5px; padding: 3px 7px; border-radius: 99px; background: #f2f1ec; color: #6c7168; font-size: 9px; vertical-align: 1px; }
+    .review-note { color: var(--muted); font-size: 10px; line-height: 1.7; }
+    dialog { width: min(450px, calc(100% - 28px)); border: 1px solid var(--line); border-radius: 24px; background: var(--card); color: var(--ink); padding: 0; box-shadow: 0 26px 90px rgba(20,26,18,.27); }
+    dialog::backdrop { background: rgba(28,34,27,.45); backdrop-filter: blur(3px); }
+    .dialog-inner { padding: 25px; }
+    .dialog-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 21px; }
+    .dialog-head h2 { margin: 0; font-size: 20px; letter-spacing: -.05em; }
+    .dialog-head p { color: var(--muted); margin: 6px 0 0; font-size: 11px; }
+    .close-button { border: 0; background: #f0efe9; color: #62665e; width: 31px; height: 31px; border-radius: 10px; font-size: 18px; }
+    .field { margin-top: 15px; }
+    .field label { display: block; color: #565c53; font-size: 11px; font-weight: 750; margin-bottom: 7px; }
+    .field input, .field select { width: 100%; height: 45px; border: 1px solid #deded5; border-radius: 12px; background: #fff; color: var(--ink); padding: 0 12px; outline: none; }
+    .field input:focus, .field select:focus { border-color: #89a87e; box-shadow: 0 0 0 3px rgba(137,168,126,.15); }
+    .field-hint { display: block; color: #8a8e85; font-size: 9px; margin-top: 6px; }
+    .plan-preview { margin-top: 14px; border-radius: 14px; background: #edf4e8; padding: 14px; color: var(--deep-green); font-size: 11px; line-height: 1.65; }
+    .plan-preview strong { font-size: 19px; letter-spacing: -.04em; }
+    .dialog-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 24px; }
+    .dialog-actions .button { min-height: 42px; }
+    .delete-button { margin-right: auto; border: 0; background: transparent; color: #b54d44; font-size: 11px; font-weight: 750; padding: 0 8px; }
+    .toast { position: fixed; bottom: 22px; left: 50%; transform: translate(-50%, 18px); opacity: 0; pointer-events: none; background: #24392a; color: white; border-radius: 99px; padding: 11px 17px; font-size: 11px; font-weight: 700; transition: .25s; box-shadow: 0 10px 24px rgba(20,30,20,.22); z-index: 10; }
+    .toast.show { opacity: 1; transform: translate(-50%,0); }
+    section[hidden] { display: none !important; }
+    .wizard-stage { width: min(900px, 100%); min-height: calc(100vh - 150px); margin: 0 auto; padding: 14px 0 42px; }
+    .wizard-topline { display: flex; justify-content: space-between; align-items: center; color: #6a7167; font-size: 10px; font-weight: 800; letter-spacing: .08em; }
+    .wizard-counter { color: var(--deep-green); font-size: 11px; letter-spacing: 0; }
+    .progress-track { height: 5px; border-radius: 99px; background: #e7e7dd; overflow: hidden; margin: 10px 0 19px; }
+    .progress-value { height: 100%; border-radius: inherit; background: #83ac72; transition: width .35s ease; }
+    .wizard-content { animation: page-in .3s ease both; }
+    @keyframes page-in { from { opacity: 0; transform: translateX(18px); } to { opacity: 1; transform: translateX(0); } }
+    .step-card { background: var(--card); border: 1px solid var(--line); border-radius: 27px; padding: 34px; box-shadow: var(--shadow); }
+    .step-kicker { margin: 0 0 10px; color: var(--deep-green); font-size: 10px; font-weight: 850; letter-spacing: .12em; }
+    .step-title { margin: 0; font-size: clamp(27px, 4vw, 39px); letter-spacing: -.07em; line-height: 1.23; font-weight: 850; }
+    .step-description { margin: 11px 0 24px; color: var(--muted); font-size: 12px; line-height: 1.8; }
+    .choice-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+    .service-choice { position: relative; min-height: 88px; border: 1px solid var(--line); border-radius: 17px; background: #fff; padding: 12px; text-align: left; color: var(--ink); display: flex; align-items: center; gap: 10px; transition: .16s ease; }
+    .service-choice:hover { border-color: #b5c7aa; transform: translateY(-2px); }
+    .service-choice.selected { background: #eff5e9; border-color: #90b07f; box-shadow: inset 0 0 0 1px #90b07f; }
+    .service-choice .service-logo { width: 38px; height: 38px; border-radius: 11px; flex: 0 0 auto; }
+    .service-choice .service-logo.netflix { font-size: 20px; }
+    .choice-name { display: block; font-size: 11px; font-weight: 850; line-height: 1.35; }
+    .choice-price { display: block; margin-top: 4px; color: var(--muted); font-size: 9px; white-space: nowrap; }
+    .choice-check { position: absolute; top: 8px; right: 9px; width: 16px; height: 16px; border: 1px solid #d5d9ce; background: white; border-radius: 50%; color: white; display: grid; place-items: center; font-size: 10px; line-height: 1; }
+    .service-choice.selected .choice-check { background: var(--deep-green); border-color: var(--deep-green); }
+    .food-choice .choice-check { color: var(--deep-green); font-weight: 850; }
+    .food-choice.selected .choice-check { color: white; }
+    .choice-other { border-style: dashed; background: #f7f5fb; }
+    .choice-other-mark { width: 38px; height: 38px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 11px; color: #554b77; background: #e7e2f5; font-size: 20px; font-weight: 700; }
+    .custom-saved { margin-top: 22px; padding-top: 17px; border-top: 1px solid var(--line); }
+    .custom-saved-title { margin: 0 0 11px; color: #60665d; font-size: 11px; font-weight: 800; }
+    .custom-saved-list { display: grid; gap: 8px; }
+    .custom-saved-row { display: flex; align-items: center; gap: 10px; padding: 9px 11px; background: #f7f6f1; border: 1px solid #eeece5; border-radius: 13px; }
+    .custom-toggle { width: 16px; height: 16px; accent-color: var(--deep-green); }
+    .custom-saved-row .service-logo { width: 34px; height: 34px; border-radius: 10px; flex: 0 0 auto; }
+    .custom-saved-info { min-width: 0; flex: 1; }
+    .custom-saved-info strong { display: block; font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .custom-saved-info span { display: block; color: var(--muted); font-size: 9px; margin-top: 3px; }
+    .wizard-actions { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 17px; }
+    .wizard-actions-end { display: flex; justify-content: flex-end; flex: 1; gap: 9px; }
+    .wizard-back { border: 0; background: transparent; padding: 11px 12px; color: #697065; font-size: 12px; font-weight: 750; }
+    .wizard-back:hover { color: var(--deep-green); }
+    .wizard-tip { color: #888d83; font-size: 10px; text-align: center; margin: 15px 0 0; }
+    .plan-options { display: grid; gap: 10px; }
+    .plan-choice { width: 100%; display: flex; align-items: center; gap: 13px; padding: 15px 16px; border: 1px solid var(--line); border-radius: 16px; background: #fff; text-align: left; color: var(--ink); transition: .16s ease; }
+    .plan-choice:hover { border-color: #a9bf9e; }
+    .plan-choice.selected { border-color: #89a87e; background: #eff5e9; box-shadow: inset 0 0 0 1px #89a87e; }
+    .plan-radio { width: 18px; height: 18px; flex: 0 0 auto; border: 1px solid #c9cec4; border-radius: 50%; position: relative; }
+    .plan-choice.selected .plan-radio { border: 5px solid var(--deep-green); }
+    .plan-copy { min-width: 0; flex: 1; }
+    .plan-copy strong { display: block; font-size: 12px; }
+    .plan-copy span { display: block; color: var(--muted); font-size: 10px; margin-top: 4px; }
+    .plan-amount { white-space: nowrap; font-size: 13px; font-weight: 850; }
+    .custom-form { max-width: 500px; }
+    .custom-form .field { margin-top: 16px; }
+    .custom-form input, .custom-form select { height: 48px; }
+    .custom-form .price-mode-choice input { width: 16px; height: 16px; }
+    .icon-picker { display: flex; gap: 8px; }
+    .icon-pick { width: 43px; height: 43px; border: 1px solid var(--line); border-radius: 13px; background: #f4f2ed; font-size: 19px; }
+    .icon-pick.selected { border: 2px solid var(--deep-green); background: #eaf3e4; }
+    .wizard-error { color: #b54d44; min-height: 15px; font-size: 10px; margin-top: 8px; }
+    .result-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin: 6px 0 34px; }
+    .result-actions { display: flex; align-items: center; gap: 9px; flex: 0 0 auto; }
+    @media (max-width: 790px) {
+      .content-grid { grid-template-columns: 1fr; }
+      .stack-visual { padding: 24px 16px 24px; }
+      .catalog-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+      .hero { align-items: flex-start; flex-direction: column; }
+      .choice-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 520px) {
+      .shell { width: min(100% - 28px, 430px); }
+      .topbar { height: 66px; }
+      .top-note { font-size: 9px; }
+      main { padding: 32px 0 50px; }
+      .welcome-stage { min-height: calc(100vh - 82px); gap: 18px; }
+      .welcome-stage h1 { font-size: 44px; }
+      .welcome-copy { max-width: 300px; font-size: 12px; margin: -4px 0 3px; }
+      .welcome-start { min-width: 170px; min-height: 54px; }
+      h1 { font-size: 38px; }
+      .hero-copy { font-size: 12px; }
+      .result-head { align-items: flex-start; flex-direction: column; }
+      .result-actions { width: 100%; }
+      .result-actions .button { flex: 1; padding: 0 10px; font-size: 11px; }
+      .review-choice-grid { grid-template-columns: 1fr; }
+      .review-service { grid-template-columns: 1fr; gap: 10px; }
+      .review-frequency-options, .review-decision-options { padding-left: 52px; }
+      .review-section { padding: 15px; }
+      .review-finish-summary { grid-template-columns: 1fr 1fr; }
+      .wizard-stage { padding-top: 0; }
+      .step-card { padding: 23px 17px; border-radius: 21px; }
+      .step-title { font-size: 30px; }
+      .step-description { font-size: 11px; }
+      .service-choice { min-height: 76px; padding: 10px 8px; gap: 7px; }
+      .service-choice .service-logo, .choice-other-mark { width: 33px; height: 33px; }
+      .choice-name { font-size: 10px; }
+      .choice-price { font-size: 8px; }
+      .wizard-actions { margin-top: 12px; }
+      .wizard-actions .button { padding: 0 13px; }
+      .plan-choice { gap: 9px; padding: 13px 10px; }
+      .plan-amount { font-size: 11px; }
+      .summary-grid { grid-template-columns: 1fr 1fr; gap: 9px; }
+      .summary-card { min-height: 108px; padding: 16px; border-radius: 18px; }
+      .summary-card.primary { grid-column: 1 / -1; }
+      .summary-value { font-size: 24px; }
+      .primary .summary-value { font-size: 32px; }
+      .panel-head { padding: 18px 17px 12px; }
+      .subscription-list { padding: 0 8px 8px; }
+      .subscription-row { gap: 8px; grid-template-columns: 40px minmax(0,1fr) auto 28px; padding: 12px 7px; }
+      .service-logo { width: 38px; height: 38px; }
+      .service-price strong { font-size: 12px; }
+      .catalog-item { padding: 10px; gap: 8px; }
+      .catalog-item .service-logo { width: 34px; height: 34px; }
+      .tower-chart { grid-template-columns: 55px minmax(0, 1fr); gap: 7px; }
+      .tower-gesture-hint { font-size: 8px; }
+      .stack-panel .panel-head { padding: 21px 18px 14px; }
+      .stack-panel .panel-title { font-size: 17px; }
+      .category-breakdown { grid-template-columns: repeat(2, minmax(0,1fr)); }
+      .category-total { padding: 12px; align-items: flex-start; flex-direction: column; }
+      .category-total strong { font-size: 13px; }
+      .price-mode-options { grid-template-columns: 1fr; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: .01ms !important; } }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="みるサブ ホーム"><span class="brand-mark">▶</span><span>みるサブ</span></a>
+      <div class="top-note"><span class="save-dot"></span>登録結果はこのブラウザに保存</div>
+    </header>
+    <main>
+      <section id="welcomeStage" class="welcome-stage">
+        <h1>みるサブ</h1>
+        <p class="welcome-copy">動画・音楽・ゲーム・アプリ・漫画・生活用品を、まとめて積み上げて見える化！</p>
+        <button class="button button-primary welcome-start" id="startWizard">始める <span aria-hidden="true">→</span></button>
+      </section>
+      <section id="wizardStage" class="wizard-stage"></section>
+      <section id="resultStage" hidden>
+        <div class="result-head">
+          <div>
+            <p class="eyebrow">YOUR SUBSCRIPTION TOWER</p>
+            <h1>いまのサブスク、<br>これだけ使ってる。</h1>
+            <p class="hero-copy">5つのカテゴリーをひとつにまとめた、毎月の合計とサブスクタワーだよ。</p>
+          </div>
+          <div class="result-actions">
+            <button class="button button-secondary" id="editAnswers">登録内容を見直す</button>
+            <button class="button button-reset" id="resetAll">リセット</button>
+          </div>
+        </div>
+
+        <section class="summary-grid" aria-label="利用料金のまとめ">
+          <article class="summary-card primary">
+            <div class="summary-label">毎月の合計</div>
+            <div class="summary-value" id="monthlyTotal">¥0<span class="summary-unit">/ 月</span></div>
+            <div class="summary-foot">年払いも月額換算で表示</div>
+          </article>
+          <article class="summary-card">
+            <div class="summary-label">年間の目安</div>
+            <div class="summary-value" id="yearlyTotal">¥0</div>
+            <div class="summary-foot">毎月の合計 × 12か月</div>
+          </article>
+          <article class="summary-card">
+            <div class="summary-label">登録サービス</div>
+            <div class="summary-value" id="serviceCount">0<span class="summary-unit">件</span></div>
+            <div class="summary-foot">自分で登録したサービスを含む</div>
+          </article>
+        </section>
+        <section class="category-breakdown" aria-label="カテゴリー別の月額料金">
+          <div class="category-total"><span>動画サブスク</span><strong id="videoTotal">¥0 / 月</strong></div>
+          <div class="category-total"><span>音楽サブスク</span><strong id="musicTotal">¥0 / 月</strong></div>
+          <div class="category-total"><span>ゲームサブスク</span><strong id="gamingTotal">¥0 / 月</strong></div>
+          <div class="category-total"><span>アプリ・漫画サブスク</span><strong id="appsTotal">¥0 / 月</strong></div>
+          <div class="category-total"><span>生活用品</span><strong id="livingTotal">¥0 / 月</strong></div>
+        </section>
+
+        <section class="content-grid">
+          <article class="panel stack-panel">
+            <div class="panel-head">
+              <div><h2 class="panel-title">わたしのサブスクタワー</h2><p class="panel-subtitle">5カテゴリーのアイコンを月額料金に合わせて積み上げ</p></div>
+              <span aria-hidden="true">✦</span>
+            </div>
+            <div class="stack-visual" id="stackVisual"></div>
+          </article>
+          <article class="panel">
+            <div class="panel-head">
+              <div><h2 class="panel-title">契約中のサービス</h2><p class="panel-subtitle">プランと月額換算額</p></div>
+              <span class="count-pill" id="listCount">0 SERVICES</span>
+            </div>
+            <div id="subscriptionList" class="subscription-list"></div>
+          </article>
+        </section>
+        <p class="footer-note">登録内容はこのブラウザ内に保存されます。料金は各社公開価格を参考にしています。生活用品の目安は配送頻度や利用内容によって変わります。</p>
+        <section class="review-invite" id="reviewInvite" aria-labelledby="reviewInviteTitle">
+          <p class="eyebrow">SUBSCRIPTION CHECK</p>
+          <h2 id="reviewInviteTitle">今のサブスク、あなたに合ってる？</h2>
+          <p>タワーを見て「ちょっと高いかも」「使いきれていないかも」と感じたら、利用頻度から一緒に見直してみよう。</p>
+          <button class="button button-primary" type="button" id="startSubscriptionReview">自分に合ったサブスクを見つける <span aria-hidden="true">→</span></button>
+        </section>
+      </section>
+      <section class="review-stage" id="reviewStage" hidden aria-live="polite"></section>
+    </main>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+const STORAGE_KEY = 'miru-subs-v1';
+const videoCatalog = [
+  { name: 'Netflix', short: 'N', style: 'netflix', plans: [
+    { id: 'ads', name: '広告つきスタンダード', price: 890, cycle: 'monthly' },
+    { id: 'standard', name: 'スタンダード', price: 1590, cycle: 'monthly' },
+    { id: 'premium', name: 'プレミアム', price: 2290, cycle: 'monthly' }
+  ] },
+  { name: 'Prime Video', short: 'prime', style: 'prime', plans: [
+    { id: 'monthly', name: 'プライム会員（月間）', price: 600, cycle: 'monthly' },
+    { id: 'yearly', name: 'プライム会員（年間）', price: 5900, cycle: 'yearly' }
+  ] },
+  { name: 'Disney+', short: 'Disney+', style: 'disney', plans: [
+    { id: 'standard-monthly', name: 'スタンダード（月額）', price: 1250, cycle: 'monthly' },
+    { id: 'standard-yearly', name: 'スタンダード（年額）', price: 12500, cycle: 'yearly' },
+    { id: 'premium-monthly', name: 'プレミアム（月額）', price: 1670, cycle: 'monthly' },
+    { id: 'premium-yearly', name: 'プレミアム（年額）', price: 16700, cycle: 'yearly' }
+  ] },
+  { name: 'U-NEXT', short: 'U', style: 'unext', plans: [
+    { id: 'web', name: 'Webサイトから入会', price: 2189, cycle: 'monthly' },
+    { id: 'app', name: 'アプリから入会', price: 2400, cycle: 'monthly' }
+  ] },
+  { name: 'Hulu', short: 'hulu', style: 'hulu', plans: [
+    { id: 'web', name: 'Hulu見放題（Web）', price: 1320, cycle: 'monthly' },
+    { id: 'app', name: 'アプリ内決済', price: 1450, cycle: 'monthly' },
+    { id: 'ticket', name: 'Huluチケット・一部提携', price: 1026, cycle: 'monthly' }
+  ] },
+  { name: 'Apple TV+', short: '●', style: 'apple', plans: [
+    { id: 'monthly', name: '月額プラン', price: 1200, cycle: 'monthly' }
+  ] },
+  { name: 'ABEMA', short: 'A', style: 'abema', plans: [
+    { id: 'ad', name: '広告つきABEMAプレミアム', price: 680, cycle: 'monthly' },
+    { id: 'premium', name: 'ABEMAプレミアム', price: 1180, cycle: 'monthly' }
+  ] },
+  { name: 'dアニメストア', short: 'd', style: 'danime', plans: [
+    { id: 'web', name: 'ブラウザから入会', price: 660, cycle: 'monthly' },
+    { id: 'app', name: 'アプリから入会', price: 760, cycle: 'monthly' }
+  ] },
+  { name: 'DAZN', short: 'DAZN', style: 'dazn', plans: [
+    { id: 'global', name: 'DAZN Global（月額）', price: 980, cycle: 'monthly' },
+    { id: 'standard-monthly', name: 'DAZN Standard（月額）', price: 4200, cycle: 'monthly' },
+    { id: 'standard-yearly-upfront', name: 'DAZN Standard（年間一括）', price: 32000, cycle: 'yearly' },
+    { id: 'standard-yearly-monthly', name: 'DAZN Standard（年間・月々払い）', price: 3200, cycle: 'monthly' },
+    { id: 'baseball-yearly-upfront', name: 'DAZN Baseball（年間一括）', price: 27600, cycle: 'yearly' },
+    { id: 'baseball-yearly-monthly', name: 'DAZN Baseball（年間・月々払い）', price: 2300, cycle: 'monthly' }
+  ] },
+  { name: 'WOWOW', short: 'W', style: 'wowow', plans: [
+    { id: 'standard', name: 'スタンダード（月額）', price: 2530, cycle: 'monthly' },
+    { id: 'triple-monthly', name: 'トリプル（月額）', price: 3960, cycle: 'monthly' },
+    { id: 'triple-yearly', name: 'トリプル（年額）', price: 43560, cycle: 'yearly' }
+  ] }
+];
+const musicCatalog = [
+  { name: 'Spotify', short: 'S', style: 'spotify', plans: [
+    { id: 'standard', name: 'Premium Standard', price: 1080, cycle: 'monthly' },
+    { id: 'duo', name: 'Premium Duo', price: 1480, cycle: 'monthly' },
+    { id: 'family', name: 'Premium Family', price: 1880, cycle: 'monthly' },
+    { id: 'student', name: 'Premium Student', price: 580, cycle: 'monthly' }
+  ] },
+  { name: 'Apple Music', short: '♪', style: 'applemusic', plans: [
+    { id: 'individual', name: '個人プラン', price: 1180, cycle: 'monthly' },
+    { id: 'family', name: 'ファミリープラン', price: 1980, cycle: 'monthly' },
+    { id: 'student', name: '学生プラン', price: 680, cycle: 'monthly' }
+  ] },
+  { name: 'YouTube Music', short: '▶', style: 'ytmusic', plans: [
+    { id: 'individual-appstore', name: '個人プラン（iPhone経由）', price: 1450, cycle: 'monthly' },
+    { id: 'family-appstore', name: 'ファミリープラン（iPhone経由）', price: 2180, cycle: 'monthly' }
+  ] },
+  { name: 'Amazon Music Unlimited', short: 'a', style: 'amazonmusic', plans: [
+    { id: 'prime-member', name: '個人プラン（Prime会員）', price: 1080, cycle: 'monthly' },
+    { id: 'individual', name: '個人プラン（Prime会員以外）', price: 1180, cycle: 'monthly' }
+  ] },
+  { name: 'LINE MUSIC', short: '♪', style: 'linemusic', plans: [
+    { id: 'premium', name: 'プレミアムプラン', price: 1080, cycle: 'monthly' },
+    { id: 'student', name: 'プレミアム学割プラン', price: 580, cycle: 'monthly' }
+  ] },
+  { name: 'AWA', short: 'AWA', style: 'awa', plans: [
+    { id: 'standard-monthly', name: 'Standard（月額・Web）', price: 980, cycle: 'monthly' },
+    { id: 'standard-yearly', name: 'Standard（年額・Web）', price: 9800, cycle: 'yearly' },
+    { id: 'standard-app-monthly', name: 'Standard（月額・アプリ決済）', price: 1080, cycle: 'monthly' },
+    { id: 'student', name: '学生プラン', price: 480, cycle: 'monthly' }
+  ] }
+];
+const gamingCatalog = [
+  { name: 'Nintendo Switch Online', short: 'N', style: 'nintendo', plans: [
+    { id: 'individual-monthly', name: '個人プラン（1か月）', price: 400, cycle: 'monthly' },
+    { id: 'individual-quarterly', name: '個人プラン（3か月）', price: 1000, cycle: 'quarterly' },
+    { id: 'individual-yearly', name: '個人プラン（12か月）', price: 3000, cycle: 'yearly' },
+    { id: 'expansion-individual', name: '追加パック 個人（12か月）', price: 5900, cycle: 'yearly' },
+    { id: 'family-yearly', name: 'ファミリー（12か月）', price: 5800, cycle: 'yearly' },
+    { id: 'expansion-family', name: '追加パック ファミリー（12か月）', price: 9900, cycle: 'yearly' }
+  ] },
+  { name: 'PlayStation Plus', short: 'PS', style: 'playstation', plans: [
+    { id: 'essential-monthly', name: 'エッセンシャル（1か月）', price: 850, cycle: 'monthly' },
+    { id: 'essential-quarterly', name: 'エッセンシャル（3か月）', price: 2150, cycle: 'quarterly' },
+    { id: 'essential-yearly', name: 'エッセンシャル（12か月）', price: 6800, cycle: 'yearly' },
+    { id: 'extra-monthly', name: 'エクストラ（月額）', price: 1300, cycle: 'monthly' },
+    { id: 'extra-quarterly', name: 'エクストラ（3か月）', price: 3600, cycle: 'quarterly' },
+    { id: 'extra-yearly', name: 'エクストラ（12か月）', price: 11700, cycle: 'yearly' },
+    { id: 'premium-monthly', name: 'プレミアム（月額）', price: 1550, cycle: 'monthly' },
+    { id: 'premium-quarterly', name: 'プレミアム（3か月）', price: 4300, cycle: 'quarterly' },
+    { id: 'premium-yearly', name: 'プレミアム（12か月）', price: 13900, cycle: 'yearly' }
+  ] },
+  { name: 'Xbox Game Pass', short: 'X', style: 'xbox', plans: [
+    { id: 'essential', name: 'Essential', price: 850, cycle: 'monthly' },
+    { id: 'premium', name: 'Premium / PC Game Pass', price: 1300, cycle: 'monthly' },
+    { id: 'ultimate', name: 'Ultimate', price: 1550, cycle: 'monthly' }
+  ] },
+  { name: 'Apple Arcade', short: 'A', style: 'applearcade', plans: [
+    { id: 'monthly', name: '月額プラン', price: 900, cycle: 'monthly' },
+    { id: 'yearly', name: '年額プラン', price: 6000, cycle: 'yearly' }
+  ] }
+];
+const appCatalog = [
+  { name: 'Adobe', short: 'A', style: 'adobe', plans: [
+    { id: 'photo', name: 'フォトプラン', price: 2380, cycle: 'monthly' },
+    { id: 'single-app', name: '単体アプリ（Photoshop等）', price: 3280, cycle: 'monthly' },
+    { id: 'creative-cloud-standard', name: 'Creative Cloud Standard', price: 6480, cycle: 'monthly' },
+    { id: 'creative-cloud-pro', name: 'Creative Cloud Pro（通常価格）', price: 9080, cycle: 'monthly' }
+  ] },
+  { name: 'Microsoft 365', short: 'M', style: 'microsoft', plans: [
+    { id: 'personal-monthly', name: 'Personal（月額）', price: 2130, cycle: 'monthly' },
+    { id: 'personal-yearly', name: 'Personal（年額）', price: 21300, cycle: 'yearly' },
+    { id: 'family-monthly', name: 'Family（月額）', price: 2740, cycle: 'monthly' },
+    { id: 'family-yearly', name: 'Family（年額）', price: 27400, cycle: 'yearly' }
+  ] },
+  { name: 'Apple Creator Studio', short: '✦', style: 'applecreator', plans: [
+    { id: 'monthly', name: '月額プラン', price: 1780, cycle: 'monthly' },
+    { id: 'yearly', name: '年額プラン', price: 17800, cycle: 'yearly' },
+    { id: 'student-monthly', name: '学生・教職員（月額）', price: 480, cycle: 'monthly' },
+    { id: 'student-yearly', name: '学生・教職員（年額）', price: 4800, cycle: 'yearly' }
+  ] }
+];
+const mangaCatalog = [
+  { name: 'BOOK☆WALKER', short: 'B', style: 'bookwalker', plans: [
+    { id: 'manga', name: '読み放題 マンガコース', price: 836, cycle: 'monthly' },
+    { id: 'max', name: '読み放題 MAXコース', price: 1100, cycle: 'monthly' }
+  ] },
+  { name: 'コミックシーモア', short: 'シ', style: 'cmoa', plans: [
+    { id: 'lite', name: '読み放題ライト', price: 780, cycle: 'monthly' },
+    { id: 'full', name: '読み放題フル', price: 1480, cycle: 'monthly' }
+  ] }
+];
+const newspaperCatalog = [
+  { name: '朝日新聞デジタル', short: '朝', style: 'asahi', sourceUrl: 'https://support.asahi.com/hc/ja/articles/28259929807255-%E3%81%A9%E3%81%AE%E3%82%88%E3%81%86%E3%81%AA%E3%82%B3%E3%83%BC%E3%82%B9%E3%81%8C%E3%81%82%E3%82%8A%E3%81%BE%E3%81%99%E3%81%8B', plans: [
+    { id: 'basic', name: 'ベーシックコース', price: 980, cycle: 'monthly' },
+    { id: 'standard', name: 'スタンダードコース', price: 1980, cycle: 'monthly' },
+    { id: 'premium', name: 'プレミアムコース', price: 3800, cycle: 'monthly' }
+  ] },
+  { name: '毎日新聞デジタル', short: '毎', style: 'mainichi', sourceUrl: 'https://faq.mainichi.jp/faq_detail.html?id=55', plans: [
+    { id: 'standard', name: 'スタンダードプラン（月更新）', price: 1078, cycle: 'monthly' },
+    { id: 'premium', name: 'プレミアムプラン（月更新）', price: 3520, cycle: 'monthly' }
+  ] },
+  { name: '日本経済新聞 電子版', short: '日', style: 'nikkei', sourceUrl: 'https://www.nikkei.com/promotion/family/', plans: [
+    { id: 'individual', name: '個人プラン', price: 4277, cycle: 'monthly' },
+    { id: 'family', name: 'ファミリープラン（同居家族4人まで）', price: 6800, cycle: 'monthly' }
+  ] },
+  { name: '産経電子版', short: '産', style: 'sankei', sourceUrl: 'https://www.sankei.jp/media/digital', plans: [
+    { id: 'basic', name: '産経ニュース ベーシックプラン', price: 990, cycle: 'monthly' },
+    { id: 'standard', name: '産経ニュース スタンダードプラン（紙面ビューアー付き）', price: 2750, cycle: 'monthly' }
+  ] },
+  { name: '読売新聞', short: '読', style: 'yomiuri', sourceUrl: 'https://www.ycnet-shiga.com/price', sourceNote: '読売新聞オンラインを含む紙の新聞料金の目安です。配達地域により料金が異なるため、お近くの販売店でご確認ください。', plans: [
+    { id: 'set-edition', name: '朝夕刊セット版（地域確認）', price: 4800, cycle: 'monthly' },
+    { id: 'integrated-edition', name: '朝刊のみ・統合版（地域確認）', price: 3800, cycle: 'monthly' }
+  ] }
+];
+const categoryOrder = ['video', 'music', 'gaming', 'apps', 'living'];
+const categoryLabels = { video: '動画', music: '音楽', gaming: 'ゲーム', apps: 'アプリ・漫画', living: '生活用品' };
+const cancellationGuides = {
+  'Netflix': 'https://help.netflix.com/ja/node/407',
+  'Prime Video': 'https://www.amazon.co.jp/mc',
+  'Disney+': 'https://help.disneyplus.com/in/article/disneyplus-cancel',
+  'U-NEXT': 'https://help.unext.jp/guide/detail/how-to-cancel-the-contract-web',
+  'Hulu': 'https://help.hulu.jp/hc/ja/articles/360044685633-Hulu%E3%82%92%E8%A7%A3%E7%B4%84%E3%81%99%E3%82%8B',
+  'Apple TV+': 'https://support.apple.com/ja-jp/118428',
+  'ABEMA': 'https://help.abema.tv/hc/ja/articles/360013441412-%E6%9C%89%E6%96%99%E3%81%AE%E8%A6%96%E8%81%B4%E3%83%97%E3%83%A9%E3%83%B3%E3%82%92%E8%A7%A3%E7%B4%84%E3%81%99%E3%82%8B%E6%96%B9%E6%B3%95',
+  'dアニメストア': 'https://animestore.docomo.ne.jp/animestore/CF/help_qa_cancel',
+  'DAZN': 'https://help.dazn.com/hc/ja-jp',
+  'WOWOW': 'https://support.wowow.co.jp/answer/61add1649e474a001c1ccf03/',
+  'Spotify': 'https://support.spotify.com/jp/article/cancel-premium/',
+  'Apple Music': 'https://support.apple.com/ja-jp/118428',
+  'YouTube Music': 'https://support.google.com/youtube/answer/6308278?hl=ja',
+  'Amazon Music Unlimited': 'https://www.amazon.co.jp/music/settings',
+  'LINE MUSIC': 'https://help.line.me/LINEMusic/web/categoryId/200000172/3/pc?lang=ja',
+  'AWA': 'https://guide.awa.fm/hc/ja/articles/115009409488-%E3%83%97%E3%83%A9%E3%83%B3%E3%82%92%E8%A7%A3%E7%B4%84%E3%81%97%E3%81%9F%E3%81%84',
+  'Nintendo Switch Online': 'https://support.nintendo.com/jp/nso/cancellation/index.html',
+  'PlayStation Plus': 'https://www.playstation.com/ja-jp/support/store/',
+  'Xbox Game Pass': 'https://support.microsoft.com/ja-jp/accounts-billing/subscriptions/cancel-your-microsoft-subscription',
+  'Apple Arcade': 'https://support.apple.com/ja-jp/118428',
+  'Adobe': 'https://helpx.adobe.com/jp/account/individual/subscriptions-and-plans/renewals-and-cancellations/cancel-adobe-subscription.html',
+  'Microsoft 365': 'https://support.microsoft.com/ja-jp/accounts-billing/subscriptions/cancel-a-microsoft-365-subscription',
+  'Apple Creator Studio': 'https://support.apple.com/ja-jp/118428',
+  'BOOK☆WALKER': 'https://help.bookwalker.jp/faq/3775',
+  'コミックシーモア': 'https://www.cmoa.jp/faq/140/'
+};
+const reviewFrequencyOptions = [
+  { id: 'daily', label: 'ほぼ毎日' },
+  { id: 'weekly', label: '週に数回' },
+  { id: 'monthly', label: '月に数回' },
+  { id: 'rarely', label: 'ほとんど使わない' }
+];
+const reviewServiceFeatures = {
+  'Netflix': 'オリジナル作品を含む映画・ドラマを幅広く楽しめる。',
+  'Prime Video': 'プライム会員特典の見放題作品が中心。レンタル・購入は追加料金の場合あり。',
+  'Disney+': 'ディズニー、ピクサー、マーベル、スター・ウォーズなどの作品に強い。',
+  'U-NEXT': '動画に加えて電子書籍も扱い、ポイントで新作レンタルなどにも使える。',
+  'Hulu': '国内外のドラマや映画を見放題で楽しめる。',
+  'Apple TV+': 'Apple Originalの映画やシリーズ作品が中心。',
+  'ABEMA': 'オリジナル番組やライブ配信が特徴。対象作品や機能はプランで異なる。',
+  'dアニメストア': 'アニメに特化。放送中の新作や先行配信作品も探しやすい。',
+  'DAZN': 'スポーツのライブ中継と見逃し・オンデマンド視聴が中心。',
+  'WOWOW': 'オリジナルドラマ、映画、スポーツ中継、音楽ライブなどを楽しめる。',
+  'Spotify': '音楽に加えてポッドキャストや好みに合わせたおすすめも楽しめる。',
+  'Apple Music': 'Apple製品との連係に加え、ロスレスや空間オーディオにも対応。',
+  'YouTube Music': '公式MV、ライブ映像、リミックスやカバーなど動画由来の音楽に強い。',
+  'Amazon Music Unlimited': 'Prime会員向け料金があり、HD・空間オーディオも選べる。',
+  'LINE MUSIC': '音楽再生に加えて、LINEプロフィールのBGM設定にも使える。',
+  'AWA': '歌詞表示や、音楽を聴きながら交流できるLOUNGEが特徴。',
+  'Nintendo Switch Online': 'オンラインプレイとセーブデータ預かり。追加パックは遊べる旧作が広がる。',
+  'PlayStation Plus': 'オンラインプレイと毎月のフリープレイ。上位プランはゲームカタログなども利用できる。',
+  'Xbox Game Pass': 'ゲームカタログが中心。プランにより対応機器やクラウドプレイなどが異なる。',
+  'Apple Arcade': 'Apple製デバイス向けのゲーム集。広告やゲーム内追加購入がない。',
+  'Adobe': 'Photoshopなど写真・動画・デザイン制作のアプリ。契約プランで使えるアプリが変わる。',
+  'Microsoft 365': 'Word・Excel・PowerPointなどの仕事用アプリとクラウド保存が中心。',
+  'Apple Creator Studio': '動画編集、音楽制作、画像編集、書類作成のApple製アプリをまとめて使える。',
+  'BOOK☆WALKER': 'マンガ中心のコースと、ライトノベル・文芸なども読めるコースを選べる。',
+  'コミックシーモア': 'ライトは定番ジャンル中心、フルはBL・TLなども含む幅広い読み放題。',
+  '朝日新聞デジタル': '速報や記事を中心に読める。契約コースで閲覧できる内容が異なる。',
+  '毎日新聞デジタル': '有料・ウェブ限定記事が中心。上位プランは紙面ビューアーや過去記事検索も使える。',
+  '日本経済新聞 電子版': '経済・企業・マネーなど、ビジネス関連のニュースに強い。',
+  '産経電子版': 'ニュース記事に加え、スタンダードプランでは新聞紙面ビューアーも使える。',
+  '読売新聞': '朝夕刊セットか朝刊のみを選べる紙の新聞。配達地域で料金が異なる。'
+};
+const livingPresets = [
+  { id: 'yakult-delivery', name: 'ヤクルト宅配', short: 'Y', style: 'yakult', averagePrice: 4200, averagePlan: '目安（ヤクルト1000を1日1本）', estimateDetail: 'Yakult1000を約140円/本として30日分で計算した目安です。地域や配達条件で異なります。', sourceUrl: 'https://www.yakult.co.jp/yakult1000/', icon: '🥛', color: '#d7edcf' },
+  { id: 'water-server', name: 'ウォーターサーバー', short: '水', style: 'water', averagePrice: 3829, averagePlan: '目安（利用者アンケート平均）', estimateDetail: '利用者アンケートの平均月額を参考にしています。機種・水の使用量で大きく異なります。', sourceUrl: 'https://mizu-navi.jp/water-server/monthly-amount-average/', icon: '💧', color: '#d8eaf4' },
+  { id: 'lotion', name: '化粧水', short: '化粧水', style: 'lotion', averagePrice: 4400, averagePlan: '目安（資生堂メン・150mL）', estimateDetail: '資生堂メン ハイドレーティング ローション Cの税込価格を30日サイクルで使う場合の目安です。商品・使用量で異なります。', sourceUrl: 'https://www.shiseido.co.jp/sw/onlinestore/campaign/shiseidomen/subscription-lotion/', icon: '🧴', color: '#e5dff1' },
+  { id: 'flowers', name: '花の定期便', short: '花', style: 'flowers', averagePrice: 5915, averagePlan: '目安（週1回・送料込みの月換算）', estimateDetail: 'ブルーミーのお試しプラン1,365円/回を年52回として月換算しています。配送頻度・地域で異なります。', sourceUrl: 'https://bloomeelife.live/', icon: '💐', color: '#f3dce8' },
+  { id: 'nosh', name: 'nosh（ナッシュ）', short: 'nosh', style: 'nosh', averagePrice: 4318, averagePlan: '目安（6食プランを月1回・送料別）', estimateDetail: '標準の6食プランを月1回注文した場合の目安です。送料は別途で、配送間隔や会員割引により変わります。', sourceUrl: 'https://ann.nosh.jp/faq/answer/19', icon: '🥗', color: '#d9edcf' }
+];
+const catalog = [
+  ...videoCatalog.map(service => ({ ...service, category: 'video' })),
+  ...musicCatalog.map(service => ({ ...service, category: 'music' })),
+  ...gamingCatalog.map(service => ({ ...service, category: 'gaming' })),
+  ...appCatalog.map(service => ({ ...service, category: 'apps' })),
+  ...mangaCatalog.map(service => ({ ...service, category: 'apps' })),
+  ...newspaperCatalog.map(service => ({ ...service, category: 'living' }))
+];
+const customIcons = [
+  { icon: '▶', color: '#ddd8f3' },
+  { icon: '🎬', color: '#f4d8cc' },
+  { icon: '📺', color: '#dcebf5' },
+  { icon: '✦', color: '#f6eabf' }
+];
+const BASE_HEIGHT = 12;
+const $ = selector => document.querySelector(selector);
+const wizardStage = $('#wizardStage');
+const resultStage = $('#resultStage');
+const reviewStage = $('#reviewStage');
+const welcomeStage = $('#welcomeStage');
+const topbar = document.querySelector('.topbar');
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
+}
+function findService(name) {
+  return catalog.find(service => service.name.toLowerCase() === String(name).toLowerCase());
+}
+function findPlan(entry) {
+  return findService(entry.name)?.plans.find(plan => plan.id === entry.planId) || null;
+}
+function yen(value) {
+  return '¥' + Math.round(value).toLocaleString('ja-JP');
+}
+function monthlyPrice(entry) {
+  const amount = Number(entry.price) || 0;
+  if (entry.billingCycle === 'yearly') return amount / 12;
+  if (entry.billingCycle === 'quarterly') return amount / 3;
+  return amount;
+}
+function currentPlanName(entry) {
+  return findPlan(entry)?.name || entry.planName || (entry.billingCycle === 'yearly' ? '年払い' : '月払い');
+}
+function serviceInfo(name, entry = null) {
+  const service = findService(name);
+  if (service) return service;
+  const preset = livingPresets.find(item => item.name === name);
+  if (preset) return preset;
+  return {
+    name,
+    short: entry?.icon || [...String(name)][0] || '映',
+    style: 'custom',
+    color: entry?.color || '#ddd8f3'
+  };
+}
+function logoMarkup(name, entry = null) {
+  const info = serviceInfo(name, entry);
+  const icon = entry?.icon || info.icon || info.short;
+  const colorStyle = info.style === 'custom' ? ` style="background:${escapeHtml(info.color)}"` : '';
+  return `<span class="service-logo ${info.style}"${colorStyle} aria-hidden="true">${escapeHtml(icon)}</span>`;
+}
+function loadEntries() {
+  try {
+    const value = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    if (!Array.isArray(value)) return [];
+    return value.filter(item => item && item.id && item.name && Number(item.price) > 0).map(item => {
+      const normalizedName = item.foodPresetId === 'newspaper' ? '朝日新聞デジタル' : item.name;
+      const service = findService(normalizedName);
+      const match = service?.plans.find(plan => plan.id === item.planId) || service?.plans.find(plan => plan.price === Number(item.price) && plan.cycle === item.billingCycle);
+      const category = item.category === 'food' ? 'living' : item.category || 'video';
+      const livingPreset = livingPresets.find(preset => preset.id === item.foodPresetId);
+      return match ? { ...item, name: service.name, category: service.category, planId: match.id, planName: match.name, price: match.price, billingCycle: match.cycle } : {
+        ...item, category, ...(livingPreset ? { icon: livingPreset.icon, color: livingPreset.color } : {}), price: Number(item.price), billingCycle: item.billingCycle || 'monthly', planName: item.planName || '自分で登録'
+      };
+    });
+  } catch { return []; }
+}
+let entries = loadEntries();
+let selectedServices = new Set();
+let customDraftEntries = [];
+let selectedCustomIds = new Set();
+let planChoices = {};
+let planQueue = [];
+let planIndex = 0;
+let wizardPage = 'services';
+let activeCategory = 'video';
+let editingCustomId = null;
+let foodFormPreset = null;
+let showWelcome = true;
+let showResults = false;
+let showReview = false;
+let reviewPage = 'intro';
+let reviewFrequency = {};
+let reviewDecisions = {};
+let reviewAutoKept = new Set();
+
+function createId() {
+  return globalThis.crypto?.randomUUID ? globalThis.crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+function makeEntry(service, plan, existingId = '') {
+  return {
+    id: existingId || createId(),
+    name: service.name,
+    category: service.category,
+    planId: plan.id,
+    planName: plan.name,
+    price: Number(plan.price),
+    billingCycle: plan.cycle
+  };
+}
+function persistEntries() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+}
+function beginEditing() {
+  selectedServices = new Set(entries.filter(item => findService(item.name)).map(item => item.name));
+  customDraftEntries = entries.filter(item => !findService(item.name)).map(item => ({ ...item, category: item.category === 'food' ? 'living' : item.category || 'video' }));
+  selectedCustomIds = new Set(customDraftEntries.map(item => item.id));
+  planChoices = Object.fromEntries(entries.filter(item => findService(item.name) && item.planId).map(item => [item.name, item.planId]));
+  planQueue = [];
+  planIndex = 0;
+  activeCategory = 'video';
+  editingCustomId = null;
+  foodFormPreset = null;
+  wizardPage = 'services';
+  showWelcome = false;
+  showResults = false;
+  showReview = false;
+  renderApp();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function selectedPlanServices() {
+  return activeCatalog().filter(service => selectedServices.has(service.name) && service.plans.length > 1);
+}
+function activeCatalog() {
+  return catalog.filter(service => service.category === activeCategory);
+}
+function selectedCountForActiveCategory() {
+  const knownCount = activeCatalog().filter(service => selectedServices.has(service.name)).length;
+  const customCount = customDraftEntries.filter(item => item.category === activeCategory && selectedCustomIds.has(item.id)).length;
+  return knownCount + customCount;
+}
+function activeCategoryLabel() {
+  return categoryLabels[activeCategory] || 'サブスク';
+}
+function renderApp() {
+  welcomeStage.hidden = !showWelcome;
+  topbar.hidden = showWelcome;
+  wizardStage.hidden = showWelcome || showResults || showReview;
+  resultStage.hidden = !showResults;
+  reviewStage.hidden = !showReview;
+  if (showResults) renderResults();
+  else if (showReview) renderReview();
+  else if (!showWelcome) renderWizard();
+}
+function resetAll() {
+  if (!window.confirm('登録したサブスクをすべて削除して、最初の画面に戻ります。よろしいですか？')) return;
+  entries = [];
+  selectedServices = new Set();
+  customDraftEntries = [];
+  selectedCustomIds = new Set();
+  planChoices = {};
+  planQueue = [];
+  planIndex = 0;
+  activeCategory = 'video';
+  wizardPage = 'services';
+  editingCustomId = null;
+  foodFormPreset = null;
+  localStorage.removeItem(STORAGE_KEY);
+  showResults = false;
+  showReview = false;
+  showWelcome = true;
+  renderApp();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function openSubscriptionReview() {
+  reviewPage = 'intro';
+  reviewFrequency = {};
+  reviewDecisions = {};
+  reviewAutoKept = new Set();
+  showWelcome = false;
+  showResults = false;
+  showReview = true;
+  renderApp();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function returnToResults() {
+  showReview = false;
+  showResults = true;
+  renderApp();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function reviewFrequencyLabel(id) {
+  return reviewFrequencyOptions.find(option => option.id === id)?.label || '未回答';
+}
+function reviewUsageRank(entry) {
+  return reviewFrequencyOptions.findIndex(option => option.id === reviewFrequency[entry.id]);
+}
+function needsReviewDecision(item) {
+  return !['daily', 'weekly'].includes(reviewFrequency[item.id]);
+}
+function prepareReviewDecisions() {
+  const decisions = {};
+  const autoKept = new Set();
+  for (const item of entries) {
+    if (['daily', 'weekly'].includes(reviewFrequency[item.id])) {
+      decisions[item.id] = 'keep';
+      autoKept.add(item.id);
+    } else if (!reviewAutoKept.has(item.id) && reviewDecisions[item.id]) {
+      decisions[item.id] = reviewDecisions[item.id];
+    }
+  }
+  reviewDecisions = decisions;
+  reviewAutoKept = autoKept;
+}
+function reviewCategoryGroups() {
+  return categoryOrder.map(category => ({
+    category,
+    items: entries.filter(item => (item.category || 'video') === category)
+  })).filter(group => group.items.length);
+}
+function reviewOverlapGroups() {
+  const groups = new Map();
+  for (const item of entries) {
+    let key = '';
+    let label = '';
+    if (['video', 'music', 'gaming'].includes(item.category)) {
+      key = item.category;
+      label = categoryLabels[item.category];
+    } else if (item.category === 'apps') {
+      const isManga = mangaCatalog.some(service => service.name === item.name);
+      if (isManga) { key = 'manga'; label = '漫画'; }
+      else if (appCatalog.some(service => service.name === item.name)) { key = 'apps'; label = 'アプリ'; }
+    } else if (item.category === 'living' && newspaperCatalog.some(service => service.name === item.name)) {
+      key = 'newspapers';
+      label = '新聞';
+    }
+    if (!key) continue;
+    const group = groups.get(key) || { label, items: [] };
+    group.items.push(item);
+    groups.set(key, group);
+  }
+  return [...groups.values()].filter(group => group.items.length > 1);
+}
+function reviewServiceFeature(item) {
+  if (item.name === 'Nintendo Switch Online' && item.planId?.startsWith('expansion')) {
+    return 'オンラインプレイやセーブデータ預かりに加え、レトロゲームの対象が広がる追加パック。';
+  }
+  if (item.name === 'PlayStation Plus') {
+    if (item.planId?.startsWith('premium')) return 'オンラインプレイやゲームカタログに加え、クラシックスカタログやゲームトライアルも利用できる。';
+    if (item.planId?.startsWith('extra')) return 'オンラインプレイと毎月のフリープレイに加え、ゲームカタログも利用できる。';
+  }
+  if (item.name === 'Microsoft 365' && item.planId?.startsWith('family')) {
+    return 'Word・Excel・PowerPointなどの仕事用アプリとクラウド保存を、家族で共有できるプラン。';
+  }
+  return reviewServiceFeatures[item.name] || 'サービスごとの対象作品や機能を、契約プランとあわせて確認できます。';
+}
+function reviewCompareMarkup() {
+  const repeatedGroups = reviewOverlapGroups();
+  if (!repeatedGroups.length) return `<div class="review-section"><h2>同じ種類のサービスを比べる</h2><p>今回の登録内容では、同じカテゴリーに複数あるサービスはありませんでした。</p></div>`;
+  return `<div class="review-section"><h2>同じ種類のサービスを比べる</h2><p>特徴・利用頻度・月額を並べました。使い分けているなら、そのままで大丈夫です。</p>${repeatedGroups.map(group => `<section class="review-compare-group"><h3>${escapeHtml(group.label)}</h3><div class="review-compare-grid">${group.items.map(item => `<article class="review-compare-item"><div class="review-service-main">${logoMarkup(item.name, item)}<div><p class="review-service-name">${escapeHtml(item.name)}</p><div class="review-service-meta">${escapeHtml(currentPlanName(item))} · ${escapeHtml(reviewFrequencyLabel(reviewFrequency[item.id]))}</div></div></div><div class="review-compare-feature"><span>特徴</span><p>${escapeHtml(reviewServiceFeature(item))}</p></div><p class="review-compare-price">月額換算 ${yen(monthlyPrice(item))}</p></article>`).join('')}</div></section>`).join('')}<p class="review-compare-disclaimer">作品・機能は契約プランや時期によって異なる場合があります。</p></div>`;
+}
+function renderReview() {
+  const nav = `<div class="review-nav"><button class="button button-secondary" type="button" data-review-close>← まとめ画面に戻る</button><span class="eyebrow">SUBSCRIPTION CHECK</span></div>`;
+  if (reviewPage === 'intro') {
+    reviewStage.innerHTML = `${nav}<div class="review-card review-intro"><p class="eyebrow">あなたに合ったサブスクを見つけよう</p><h1>今入っているサブスクは、<br>このタワーのとおり。</h1><p class="review-intro-copy">このグラフを見て、あなたはどう思いますか？まずは今の使い方に合っているか、いっしょに確かめてみましょう。</p><div class="review-total"><span>登録中のサブスク</span><strong>${entries.length}件 · ${yen(entries.reduce((sum, item) => sum + monthlyPrice(item), 0))} / 月</strong></div><div class="review-choice-grid"><button class="review-choice" type="button" data-review-route="frequency"><strong>ちょっと高い・多いかも</strong><span>使う頻度や同じ種類のサービスを見比べてみる</span></button><button class="review-choice" type="button" data-review-route="good"><strong>まあ、こんなものかな</strong><span>今のサブスクに満足しているなら、これで診断はおしまい</span></button></div></div>`;
+    return;
+  }
+  if (reviewPage === 'good') {
+    reviewStage.innerHTML = `${nav}<div class="review-card review-intro"><p class="eyebrow">YOUR SUBSCRIPTION LIFE</p><h1>いいサブスクライフを！</h1><p class="review-intro-copy">今の使い方に納得できているなら、そのまま楽しもう。タワーの金額や登録内容はいつでもまとめ画面から確認できます。</p><button class="button button-primary" type="button" data-review-close>まとめ画面へ戻る</button></div>`;
+    return;
+  }
+  if (reviewPage === 'frequency') {
+    const answered = entries.filter(item => reviewFrequency[item.id]).length;
+    const grouped = reviewCategoryGroups().map(group => `<section class="review-section"><h2>${escapeHtml(categoryLabels[group.category] || 'サブスク')}</h2><p>このサービスを使う・受け取る頻度は？</p>${group.items.map(item => `<article class="review-service"><div class="review-service-main">${logoMarkup(item.name, item)}<div><p class="review-service-name">${escapeHtml(item.name)}</p><div class="review-service-meta">${escapeHtml(currentPlanName(item))} · 月額換算 ${yen(monthlyPrice(item))}</div></div></div><div class="review-frequency-options" role="group" aria-label="${escapeHtml(item.name)}の利用頻度">${reviewFrequencyOptions.map(option => `<button type="button" class="review-frequency-option${reviewFrequency[item.id] === option.id ? ' selected' : ''}" data-review-frequency data-entry-id="${escapeHtml(item.id)}" data-frequency="${option.id}" aria-pressed="${reviewFrequency[item.id] === option.id}">${option.label}</button>`).join('')}</div></article>`).join('')}</section>`).join('');
+    reviewStage.innerHTML = `${nav}<div class="review-card"><p class="eyebrow">STEP 1 · USE FREQUENCY</p><h1>それぞれ、どれくらい使ってる？</h1><p class="hero-copy">使う頻度を選んでね。食事や生活用品は、使う・受け取る頻度で考えてみよう。</p><p class="review-note">${answered} / ${entries.length} 件回答済み</p>${grouped}<div class="review-actions"><button class="button button-secondary" type="button" data-review-back>戻る</button><button class="button button-primary" type="button" data-frequency-next ${answered < entries.length ? 'disabled' : ''}>利用状況を見直す <span aria-hidden="true">→</span></button></div></div>`;
+    return;
+  }
+  if (reviewPage === 'decision') {
+    const ordered = entries.filter(needsReviewDecision).sort((a, b) => reviewUsageRank(b) - reviewUsageRank(a) || monthlyPrice(b) - monthlyPrice(a));
+    const answered = ordered.filter(item => reviewDecisions[item.id]).length;
+    const skippedFrequent = entries.filter(item => reviewAutoKept.has(item.id)).length;
+    const decisionSection = ordered.length ? `<section class="review-section"><h2>このサブスク、これからも必要？</h2><p>利用頻度が少ないものから並べました。今の気持ちに近いものを選んでください。</p>${ordered.map(item => `<article class="review-service"><div class="review-service-main">${logoMarkup(item.name, item)}<div><p class="review-service-name">${escapeHtml(item.name)}</p><div class="review-service-meta">${escapeHtml(categoryLabels[item.category || 'video'] || 'サブスク')} · ${escapeHtml(reviewFrequencyLabel(reviewFrequency[item.id]))} · 月額換算 ${yen(monthlyPrice(item))}</div></div></div><div class="review-decision-options" role="group" aria-label="${escapeHtml(item.name)}を続けるか">${[['keep', '続けたい'], ['unsure', '迷っている'], ['review', '見直したい']].map(([id, label]) => `<button type="button" class="review-decision-option${reviewDecisions[item.id] === id ? ' selected' : ''}" data-review-decision data-entry-id="${escapeHtml(item.id)}" data-decision="${id}" aria-pressed="${reviewDecisions[item.id] === id}">${label}</button>`).join('')}</div></article>`).join('')}</section>` : `<section class="review-section"><h2>よく使っているサブスク</h2><p>毎日または週に数回使う ${skippedFrequent} 件は必要度の質問を省略しました。結果に「続けたい」としてまとめます。</p></section>`;
+    reviewStage.innerHTML = `${nav}<div class="review-card"><p class="eyebrow">STEP 2 · REVIEW</p><h1>利用頻度が少ないものから、<br>見直してみよう。</h1><p class="hero-copy">同じ種類のサービスは料金と使い方を並べました。内容が重なっているか、続ける価値を感じているかを考えてみてね。</p>${reviewCompareMarkup()}${decisionSection}<p class="review-note">${answered} / ${ordered.length} 件回答済み${skippedFrequent ? ` · 毎日・週に数回使う ${skippedFrequent} 件は質問を省略` : ''}</p><div class="review-actions"><button class="button button-secondary" type="button" data-review-back>利用頻度に戻る</button><button class="button button-primary" type="button" data-decision-finish ${answered < ordered.length ? 'disabled' : ''}>見直し結果を見る <span aria-hidden="true">→</span></button></div></div>`;
+    return;
+  }
+  const reconsider = entries.filter(item => reviewDecisions[item.id] === 'review');
+  const unsure = entries.filter(item => reviewDecisions[item.id] === 'unsure');
+  const possibleSaving = reconsider.reduce((sum, item) => sum + monthlyPrice(item), 0);
+  const possibleAnnualSaving = possibleSaving * 12;
+  const results = [...entries].sort((a, b) => {
+    const priority = value => value === 'review' ? 0 : value === 'unsure' ? 1 : 2;
+    return priority(reviewDecisions[a.id]) - priority(reviewDecisions[b.id]) || reviewUsageRank(b) - reviewUsageRank(a);
+  });
+  const rows = results.map(item => {
+    const state = reviewDecisions[item.id];
+    const stateLabel = state === 'review' ? '見直したい' : state === 'unsure' ? '迷っている' : '続けたい';
+    const guide = cancellationGuides[item.name];
+    const genericAccountLink = ['Prime Video', 'DAZN', 'Amazon Music Unlimited', 'PlayStation Plus'].includes(item.name);
+    const action = ['review', 'unsure'].includes(state) ? (guide ? `<a class="review-link" href="${guide}" target="_blank" rel="noopener noreferrer">${state === 'unsure' ? '解約方法を確認しておく' : genericAccountLink ? '公式ページで手続き方法を確認' : '公式の解約案内を見る'} ↗</a>` : `<p class="review-note">${state === 'unsure' ? '迷っている場合も、契約したサービスの公式サイトや請求元で解約方法を確認できます。' : '契約したサービスの公式サイト、またはApp Store・Google Playで請求元を確認して手続きしてください。'}</p>`) : '';
+    return `<article class="review-service"><div class="review-service-main">${logoMarkup(item.name, item)}<div><p class="review-service-name">${escapeHtml(item.name)} <span class="review-result-tag">${stateLabel}</span></p><div class="review-service-meta">${escapeHtml(categoryLabels[item.category || 'video'] || 'サブスク')} · ${escapeHtml(reviewFrequencyLabel(reviewFrequency[item.id]))} · 月額換算 ${yen(monthlyPrice(item))}</div>${action}</div></div></article>`;
+  }).join('');
+  reviewStage.innerHTML = `${nav}<div class="review-card"><p class="eyebrow">YOUR REVIEW</p><h1>あなたに合った形に、<br>整えていこう。</h1><p class="hero-copy">回答した内容をもとに、見直し候補と節約の目安をまとめました。</p><div class="review-savings-card"><span>「見直したい」をすべて解約した場合</span><strong>${yen(possibleSaving)}<small> / 月</small></strong><p>見直しができれば、毎月の支出をこれだけ節約できそうです。</p><p class="review-savings-annual">年間換算 ${yen(possibleAnnualSaving)} · 契約内容や解約時期で異なる目安です</p></div><div class="review-finish-summary"><div class="review-finish-stat"><span>見直したい</span><strong>${reconsider.length}件</strong></div><div class="review-finish-stat"><span>迷っている</span><strong>${unsure.length}件</strong></div></div><section class="review-section"><h2>診断結果</h2><p>選んだ気持ちを一覧にしました。見直す場合は各社の公式案内から手続きしてください。</p>${rows || '<p class="review-note">登録されたサービスはありません。</p>'}</section><p class="review-note">金額は各サービスの月額換算を合計した目安です。実際の節約額は契約内容や解約時期によって異なります。公式案内でも、App Store・Google Play・通信会社など登録した請求元から手続きが必要な場合があります。見直し候補のサービス名と請求元を確認してから進めてね。</p><div class="review-actions"><button class="button button-secondary" type="button" data-review-back>回答を見直す</button><button class="button button-primary" type="button" data-review-close>まとめ画面に戻る</button></div></div>`;
+}
+function updateServiceSelectionSummary() {
+  const serviceCount = selectedCountForActiveCategory();
+  const nextButton = wizardStage.querySelector('[data-next-services]');
+  if (nextButton) nextButton.innerHTML = `次へ · ${serviceCount}件 <span aria-hidden="true">→</span>`;
+  const totalSteps = 1 + selectedPlanServices().length;
+  const counter = wizardStage.querySelector('.wizard-counter');
+  if (counter) counter.textContent = `1 / ${totalSteps}`;
+  const progress = wizardStage.querySelector('.progress-value');
+  if (progress) progress.style.width = `${Math.max(8, Math.round(100 / totalSteps))}%`;
+}
+function renderResults() {
+  const total = entries.reduce((sum, item) => sum + monthlyPrice(item), 0);
+  $('#reviewInvite').hidden = !entries.length;
+  const categoryTotals = Object.fromEntries(categoryOrder.map(category => [category, entries.filter(item => (item.category || 'video') === category).reduce((sum, item) => sum + monthlyPrice(item), 0)]));
+  $('#monthlyTotal').innerHTML = `${yen(total)}<span class="summary-unit">/ 月</span>`;
+  $('#yearlyTotal').textContent = yen(total * 12);
+  $('#serviceCount').innerHTML = `${entries.length}<span class="summary-unit">件</span>`;
+  $('#listCount').textContent = `${entries.length} SERVICE${entries.length === 1 ? '' : 'S'}`;
+  for (const category of categoryOrder) {
+    const totalElement = $(`#${category}Total`);
+    if (totalElement) totalElement.textContent = `${yen(categoryTotals[category])} / 月`;
+  }
+
+  if (!entries.length) {
+    $('#subscriptionList').innerHTML = `<div class="empty-state"><div class="empty-graphic">▣</div><strong>サブスクはまだ登録されていません</strong><p>各カテゴリーのサービスを選んで、<br>毎月の支出を見える化しましょう。</p><button class="button button-primary" type="button" data-review>登録を始める</button></div>`;
+    $('#stackVisual').innerHTML = `<div class="stack-glow"></div><div class="stack-empty"><span>▧</span>サブスクを登録すると<br>タワーができます</div>`;
+    return;
+  }
+
+  const ordered = [...entries].sort((a, b) => monthlyPrice(a) - monthlyPrice(b));
+  $('#subscriptionList').innerHTML = ordered.map(item => {
+    const categoryLabel = categoryLabels[item.category || 'video'] || 'その他';
+    const amount = item.billingCycle === 'yearly' ? `${yen(item.price)} / 年` : item.billingCycle === 'quarterly' ? `${yen(item.price)} / 3か月` : `${yen(item.price)} / 月`;
+    const monthlyInfo = item.billingCycle !== 'monthly' ? ` · 月換算 ${yen(monthlyPrice(item))}` : '';
+    const estimateInfo = item.priceSource === 'estimate' ? ' · 目安価格' : '';
+    const editButton = findService(item.name) ? '<span></span>' : item.foodPresetId ? `<button type="button" class="row-menu" data-edit-food="${escapeHtml(item.id)}" aria-label="${escapeHtml(item.name)}を編集">···</button>` : `<button type="button" class="row-menu" data-edit-other="${escapeHtml(item.id)}" aria-label="${escapeHtml(item.name)}を編集">···</button>`;
+    return `<div class="subscription-row">
+      ${logoMarkup(item.name, item)}
+      <div><p class="service-name">${escapeHtml(item.name)}</p><div class="service-meta">${categoryLabel} · ${escapeHtml(currentPlanName(item))}${estimateInfo}${monthlyInfo}</div></div>
+      <div class="service-price"><strong>${amount.split(' / ')[0]}</strong><span>/ ${item.billingCycle === 'yearly' ? '年' : item.billingCycle === 'quarterly' ? '3か月' : '月'}</span></div>
+      ${editButton}
+    </div>`;
+  }).join('');
+
+  const maxCubePrice = Math.max(...ordered.map(item => monthlyPrice(item)));
+  const chartWidth = Math.min(900, Math.max(180, $('#stackVisual').clientWidth - 64));
+  const pileWidth = Math.max(110, chartWidth - 82);
+  const step = total <= 3500 ? 500 : total <= 8500 ? 1000 : 2000;
+  const maxTick = Math.ceil(total / step) * step;
+  const availableChartHeight = Math.max(220, window.innerHeight - 270);
+  const heightFitScale = Math.max(0.001, (availableChartHeight - BASE_HEIGHT) / maxTick);
+  const pixelScale = Math.min(0.075, pileWidth / Math.max(maxCubePrice, 1), heightFitScale);
+  const chartHeight = maxTick * pixelScale + BASE_HEIGHT;
+  const totalHeight = total * pixelScale;
+  const marks = Array.from({ length: Math.round(maxTick / step) + 1 }, (_, index) => index * step);
+  const axisMarks = marks.map(value => `<span class="axis-mark" style="bottom:${BASE_HEIGHT + value * pixelScale}px">${yen(value)}</span>`).join('');
+  const gridLines = marks.map(value => `<span class="tower-grid-line" style="bottom:${BASE_HEIGHT + value * pixelScale}px"></span>`).join('');
+  const cubes = ordered.map((item, index) => {
+    const side = monthlyPrice(item) * pixelScale;
+    const tilt = index % 2 ? '1deg' : '-1deg';
+    const label = `${item.name}、${currentPlanName(item)}、月額換算 ${yen(monthlyPrice(item))}`;
+    return `<div class="stack-cube" style="--cube-size:${side}px;--tilt:${tilt}" data-service-name="${escapeHtml(item.name)}" data-service-price="${yen(monthlyPrice(item))}" tabindex="0" role="img" aria-label="${escapeHtml(label)}" aria-describedby="towerTooltip">
+      ${logoMarkup(item.name, item)}
+    </div>`;
+  }).join('');
+  $('#stackVisual').innerHTML = `<div class="stack-glow"></div><div class="tower-tools" aria-label="タワーの表示倍率">
+    <span class="tower-gesture-hint">＋・−で拡大・縮小 · アイコンにカーソルを合わせると金額を表示</span>
+    <div class="tower-zoom-controls"><button type="button" data-zoom-out aria-label="タワーを縮小">−</button><button type="button" data-zoom-reset aria-label="倍率をリセット">100%</button><button type="button" data-zoom-in aria-label="タワーを拡大">＋</button></div>
+  </div><div class="tower-viewport" id="towerViewport" style="height:${chartHeight}px" aria-label="サブスクタワー。表示倍率を調整できます">
+  <div class="tower-canvas" id="towerCanvas" data-chart-width="${chartWidth}" data-chart-height="${chartHeight}"><div class="tower-chart" id="towerChart" style="width:${chartWidth}px;height:${chartHeight}px;--base-height:${BASE_HEIGHT}px">
+    <div class="tower-axis" style="height:${chartHeight}px"><span class="axis-title">月額換算</span>${axisMarks}</div>
+    <div class="tower-pile" style="height:${chartHeight}px">${gridLines}<div class="stack-cards" style="height:${totalHeight}px;bottom:${BASE_HEIGHT}px">${cubes}</div><div class="stack-base"></div></div>
+  </div></div></div><div class="tower-tooltip" id="towerTooltip" role="tooltip" hidden></div><div class="stack-caption">目盛り間隔 ${yen(step)} · アイコンの大きさは月額換算額に比例</div>`;
+  initTowerZoom();
+}
+
+function initTowerZoom() {
+  const viewport = $('#towerViewport');
+  const canvas = $('#towerCanvas');
+  const chart = $('#towerChart');
+  const stackVisual = $('#stackVisual');
+  const tooltip = $('#towerTooltip');
+  if (!viewport || !canvas || !chart || !stackVisual || !tooltip) return;
+  const defaultZoom = 1;
+  let zoom = defaultZoom;
+  let tooltipTimer = 0;
+  const clamp = value => Math.min(2.2, Math.max(0.75, value));
+  const setZoom = next => {
+    tooltip.hidden = true;
+    zoom = clamp(next);
+    const width = Number(canvas.dataset.chartWidth);
+    const height = Number(canvas.dataset.chartHeight);
+    canvas.style.width = `${width * zoom}px`;
+    canvas.style.height = `${height * zoom}px`;
+    chart.style.transform = `scale(${zoom})`;
+    const focusX = (width + 82) / 2;
+    const focusY = height / 2;
+    chart.style.transformOrigin = `${focusX}px ${focusY}px`;
+    chart.style.left = `${focusX * (zoom - 1)}px`;
+    chart.style.top = `${focusY * (zoom - 1)}px`;
+    viewport.style.height = `${height * zoom}px`;
+    viewport.scrollLeft = Math.max(0, focusX * zoom - viewport.clientWidth / 2);
+    const resetButton = viewport.parentElement.querySelector('[data-zoom-reset]');
+    if (resetButton) resetButton.textContent = `${Math.round(zoom * 100)}%`;
+  };
+  setZoom(zoom);
+  viewport.parentElement.querySelector('[data-zoom-in]')?.addEventListener('click', () => setZoom(zoom * 1.2));
+  viewport.parentElement.querySelector('[data-zoom-out]')?.addEventListener('click', () => setZoom(zoom / 1.2));
+  viewport.parentElement.querySelector('[data-zoom-reset]')?.addEventListener('click', () => {
+    setZoom(defaultZoom);
+    viewport.scrollTo({ left: 0, top: 0, behavior: 'smooth' });
+  });
+  const hideTooltip = () => {
+    window.clearTimeout(tooltipTimer);
+    tooltip.hidden = true;
+    tooltip.classList.remove('below');
+  };
+  viewport.addEventListener('scroll', hideTooltip, { passive: true });
+  const showTooltip = (cube, autoHide = false) => {
+    if (!cube) return;
+    window.clearTimeout(tooltipTimer);
+    tooltip.innerHTML = `<strong>${escapeHtml(cube.dataset.serviceName || '')}</strong><span>${escapeHtml(cube.dataset.servicePrice || '')} / 月</span>`;
+    tooltip.hidden = false;
+    const cubeRect = cube.getBoundingClientRect();
+    const visualRect = stackVisual.getBoundingClientRect();
+    const halfTooltip = tooltip.offsetWidth / 2;
+    const centerX = cubeRect.left + cubeRect.width / 2 - visualRect.left;
+    const minX = halfTooltip + 8;
+    const maxX = visualRect.width - halfTooltip - 8;
+    tooltip.style.left = `${Math.max(minX, Math.min(maxX, centerX))}px`;
+    const topEdge = cubeRect.top - visualRect.top - 9;
+    if (topEdge < tooltip.offsetHeight + 8) {
+      tooltip.classList.add('below');
+      tooltip.style.top = `${cubeRect.bottom - visualRect.top + 9}px`;
+    } else {
+      tooltip.classList.remove('below');
+      tooltip.style.top = `${topEdge}px`;
+    }
+    if (autoHide) tooltipTimer = window.setTimeout(hideTooltip, 2800);
+  };
+  viewport.addEventListener('pointerover', event => {
+    if (event.pointerType !== 'mouse') return;
+    const cube = event.target.closest('.stack-cube');
+    if (cube) showTooltip(cube);
+  });
+  viewport.addEventListener('pointerout', event => {
+    if (event.pointerType !== 'mouse') return;
+    const cube = event.target.closest('.stack-cube');
+    if (cube && !cube.contains(event.relatedTarget)) hideTooltip();
+  });
+  viewport.addEventListener('pointerdown', event => {
+    const cube = event.target.closest('.stack-cube');
+    if (event.pointerType === 'touch') {
+      if (cube) showTooltip(cube, true);
+      else hideTooltip();
+    }
+  });
+  viewport.addEventListener('focusin', event => {
+    const cube = event.target.closest('.stack-cube');
+    if (cube && tooltip.hidden) showTooltip(cube);
+  });
+  viewport.addEventListener('focusout', event => {
+    if (event.target.closest('.stack-cube')) hideTooltip();
+  });
+}
+
+function progressFrame(content, current, total, nav, sublabel = `${activeCategoryLabel()}サブスクを整理`) {
+  const percentage = Math.max(8, Math.round(current / total * 100));
+  wizardStage.innerHTML = `<div class="wizard-topline"><span>${sublabel}</span><span class="wizard-counter">${current} / ${total}</span></div>
+    <div class="progress-track"><div class="progress-value" style="width:${percentage}%"></div></div>
+    <div class="wizard-content">${content}</div>${nav}<p class="wizard-tip">入力した内容は最後にこのブラウザへ保存されます</p>`;
+}
+function planDisplay(plan) {
+  if (plan.cycle === 'yearly') return { amount: `${yen(plan.price)} / 年`, note: `月にすると ${yen(plan.price / 12)} / 月` };
+  if (plan.cycle === 'quarterly') return { amount: `${yen(plan.price)} / 3か月`, note: `月にすると ${yen(plan.price / 3)} / 月` };
+  return { amount: `${yen(plan.price)} / 月`, note: '毎月のお支払い' };
+}
+function renderServicePage() {
+  const serviceCount = selectedCountForActiveCategory();
+  const categoryLabel = activeCategoryLabel();
+  const livingChoices = livingPresets.map(preset => {
+    const saved = customDraftEntries.find(item => item.foodPresetId === preset.id);
+    return `<button type="button" class="service-choice food-choice${saved ? ' selected' : ''}" data-food-preset="${preset.id}" ${saved ? 'disabled' : ''}>
+      ${logoMarkup(preset.name)}<span><span class="choice-name">${escapeHtml(preset.name)}</span><span class="choice-price">目安 ${yen(preset.averagePrice)} / 月 · 金額変更OK</span></span><span class="choice-check">${saved ? '✓' : '+'}</span>
+    </button>`;
+  }).join('');
+  const newspaperChoices = activeCatalog().map(service => {
+    const active = selectedServices.has(service.name);
+    const least = Math.min(...service.plans.map(plan => plan.cycle === 'yearly' ? plan.price / 12 : plan.cycle === 'quarterly' ? plan.price / 3 : plan.price));
+    return `<button type="button" class="service-choice${active ? ' selected' : ''}" data-service-toggle="${escapeHtml(service.name)}" aria-pressed="${active}">
+      ${logoMarkup(service.name)}<span><span class="choice-name">${escapeHtml(service.name)}</span><span class="choice-price">${yen(least)} / 月〜 · 出版社を選ぶ</span></span><span class="choice-check">${active ? '✓' : ''}</span>
+    </button>`;
+  }).join('');
+  const choices = activeCategory === 'living' ? `${livingChoices}${newspaperChoices}` : activeCatalog().map(service => {
+    const active = selectedServices.has(service.name);
+    const least = Math.min(...service.plans.map(plan => plan.cycle === 'yearly' ? plan.price / 12 : plan.cycle === 'quarterly' ? plan.price / 3 : plan.price));
+    return `<button type="button" class="service-choice${active ? ' selected' : ''}" data-service-toggle="${escapeHtml(service.name)}" aria-pressed="${active}">
+      ${logoMarkup(service.name)}<span><span class="choice-name">${escapeHtml(service.name)}</span><span class="choice-price">${yen(least)} / 月〜</span></span><span class="choice-check">${active ? '✓' : ''}</span>
+    </button>`;
+  }).join('');
+  const categoryCustomEntries = customDraftEntries.filter(item => item.category === activeCategory);
+  const customRows = categoryCustomEntries.length ? `<div class="custom-saved"><p class="custom-saved-title">自分で登録したサービス</p><div class="custom-saved-list">${categoryCustomEntries.map(item => {
+    const active = selectedCustomIds.has(item.id);
+    const amount = `${yen(monthlyPrice(item))} / 月換算`;
+    const editAction = item.foodPresetId ? `<button type="button" class="row-menu" data-edit-food="${escapeHtml(item.id)}" aria-label="${escapeHtml(item.name)}の金額を編集">···</button>` : '';
+    const estimate = item.priceSource === 'estimate' ? ' · 目安価格' : '';
+    return `<div class="custom-saved-row">${logoMarkup(item.name, item)}<input class="custom-toggle" type="checkbox" data-custom-toggle="${escapeHtml(item.id)}" ${active ? 'checked' : ''}><span class="custom-saved-info"><strong>${escapeHtml(item.name)}</strong><span>${amount}${estimate} · ${item.billingCycle === 'yearly' ? '年払い' : '月払い'}</span></span>${editAction}</div>`;
+  }).join('')}</div></div>` : '';
+  const description = {
+    video: '動画のあとに音楽、ゲーム、アプリ・漫画、生活用品も順番に選んでいくよ。複数プランは次の画面で選ぼう。',
+    music: '使っている音楽サービスを選ぼう。続けてゲーム、アプリ・漫画、生活用品も確認するよ。',
+    gaming: 'オンラインプレイやゲーム遊び放題など、契約中のサービスを選ぼう。',
+    apps: 'AdobeやMicrosoft 365、Apple Creator Studio、漫画の読み放題をまとめて選べるよ。',
+    living: '化粧水や花、宅配食などを選ぼう。新聞は出版社を選んでから、契約中のプランを選べるよ。'
+  }[activeCategory];
+  const otherChoice = `<button type="button" class="service-choice choice-other" data-add-other><span class="choice-other-mark">＋</span><span><span class="choice-name">その他</span><span class="choice-price">${activeCategory === 'living' ? 'サービス名と金額を入力' : '自分で登録する'}</span></span></button>`;
+  const choicesWithOther = `${choices}${otherChoice}`;
+  const livingSources = activeCategory === 'living' ? `<p class="food-source-note">新聞は朝日・毎日・日経・産経・読売から選べるよ。出版社を選ぶと次にプランが表示されます。読売は紙の購読料の目安で、地域により異なります。生活用品の目安額も配送頻度や利用内容で変わります。</p>` : '';
+  const content = `<section class="step-card">
+    <p class="step-kicker">QUESTION ${String(categoryOrder.indexOf(activeCategory) + 1).padStart(2, '0')} · ${categoryLabel}サブスク</p>
+    <h1 class="step-title">入っている${categoryLabel}サービスを<br>選んでね。</h1>
+    <p class="step-description">${description}</p>
+    <div class="choice-grid">${choicesWithOther}</div>
+    ${livingSources}
+    ${customRows}
+  </section>`;
+  const categoryIndex = categoryOrder.indexOf(activeCategory);
+  const backButton = categoryIndex > 0
+    ? `<button type="button" class="wizard-back" data-back-category>← ${categoryLabels[categoryOrder[categoryIndex - 1]]}の設定へ</button>`
+    : `<button type="button" class="wizard-back" data-cancel-edit ${entries.length ? '' : 'hidden'}>戻る</button>`;
+  const nav = `<div class="wizard-actions">${backButton}<div class="wizard-actions-end"><button type="button" class="button button-primary" data-next-services>次へ · ${serviceCount}件 <span aria-hidden="true">→</span></button></div></div>`;
+  const stepCount = 1 + selectedPlanServices().length;
+  progressFrame(content, 1, stepCount, nav);
+}
+function preparePlanQueue() {
+  planQueue = selectedPlanServices();
+  planIndex = 0;
+  for (const service of planQueue) {
+    const saved = entries.find(item => item.name === service.name);
+    const current = planChoices[service.name] || saved?.planId;
+    planChoices[service.name] = service.plans.some(plan => plan.id === current) ? current : service.plans[0].id;
+  }
+}
+function renderPlanPage() {
+  const service = planQueue[planIndex];
+  if (!service) return finishWizard();
+  const existing = entries.find(item => item.name === service.name);
+  const planSource = [
+    service.sourceNote ? escapeHtml(service.sourceNote) : '',
+    service.sourceUrl ? `<a href="${escapeHtml(service.sourceUrl)}" target="_blank" rel="noreferrer">料金の根拠を見る</a>` : ''
+  ].filter(Boolean).join(' · ');
+  const content = `<section class="step-card">
+    <p class="step-kicker">QUESTION ${String(planIndex + 2).padStart(2, '0')} · ${escapeHtml(service.name)}のプラン</p>
+    <h1 class="step-title">${logoMarkup(service.name)}<br>${escapeHtml(service.name)}は<br>どのプラン？</h1>
+    <p class="step-description">契約中のプランを選ぶと、金額を自動で反映するよ。</p>
+    <div class="plan-options">${service.plans.map(plan => {
+      const active = planChoices[service.name] === plan.id;
+      const display = planDisplay(plan);
+      return `<button type="button" class="plan-choice${active ? ' selected' : ''}" data-plan-choice="${escapeHtml(plan.id)}" aria-pressed="${active}">
+        <span class="plan-radio"></span><span class="plan-copy"><strong>${escapeHtml(plan.name)}</strong><span>${escapeHtml(display.note)}</span></span><span class="plan-amount">${escapeHtml(display.amount)}</span>
+      </button>`;
+    }).join('')}</div>${planSource ? `<p class="estimate-detail">${planSource}</p>` : ''}
+  </section>`;
+  const nav = `<div class="wizard-actions"><button type="button" class="wizard-back" data-back-plan>← 戻る</button><div class="wizard-actions-end"><button type="button" class="button button-primary" data-next-plan>${planIndex === planQueue.length - 1 ? '結果を見る' : '次のサービスへ'} <span aria-hidden="true">→</span></button></div></div>`;
+  progressFrame(content, planIndex + 2, planQueue.length + 1, nav);
+  if (existing) wizardStage.querySelector('.step-description').insertAdjacentHTML('beforeend', ` <span>前回の選択：${escapeHtml(currentPlanName(existing))}</span>`);
+}
+function startFoodForm(presetId = '', item = null) {
+  const preset = livingPresets.find(option => option.id === (item?.foodPresetId || presetId)) || null;
+  editingCustomId = item?.id || null;
+  wizardPage = 'food-amount';
+  foodFormPreset = preset;
+  renderWizard(true);
+}
+function renderFoodAmountPage() {
+  const original = editingCustomId ? customDraftEntries.find(item => item.id === editingCustomId) : null;
+  const preset = foodFormPreset || livingPresets.find(item => item.id === original?.foodPresetId) || null;
+  const hasEstimate = Boolean(preset?.averagePrice);
+  const estimateSelected = original?.priceSource === 'estimate';
+  const estimateLabel = preset?.averagePlan || '平均価格';
+  const estimateSource = preset?.estimateDetail || '';
+  const name = original?.name || preset?.name || '';
+  const content = `<section class="step-card">
+    <p class="step-kicker">LIVING · 金額の登録</p>
+    <h1 class="step-title">${escapeHtml(name || '生活用品')}の<br>金額を教えてね。</h1>
+    <p class="step-description">請求額がわかる場合は入力。わからない場合は参考の目安価格を使えるよ。</p>
+    <form id="foodForm" class="custom-form">
+      <div class="field"><label for="foodName">サービス名</label><input id="foodName" name="name" required maxlength="35" value="${escapeHtml(name)}" ${preset ? 'readonly' : ''} placeholder="例：日用品の定期便"></div>
+      <div class="price-mode-options">
+        <label class="price-mode-choice${estimateSelected ? '' : ' selected'}"><input type="radio" name="priceMode" value="actual" ${estimateSelected ? '' : 'checked'}><span><strong>金額がわかる</strong><small>実際の金額を入力</small></span></label>
+        ${hasEstimate ? `<label class="price-mode-choice${estimateSelected ? ' selected' : ''}"><input type="radio" name="priceMode" value="estimate" ${estimateSelected ? 'checked' : ''}><span><strong>${escapeHtml(estimateLabel)}</strong><small>${yen(preset.averagePrice)} / 月</small></span></label>` : ''}
+      </div>
+      <div class="field"><label for="foodPrice">${estimateSelected ? '参考の目安価格' : '実際の料金（円）'}</label><input id="foodPrice" name="price" type="number" min="1" step="1" inputmode="numeric" required ${estimateSelected ? 'disabled' : ''} value="${estimateSelected ? preset.averagePrice : original ? Number(original.price) : ''}" placeholder="例：4,000"></div>
+      <div class="field"><label for="foodCycle">支払い周期</label><select id="foodCycle" name="cycle" ${estimateSelected ? 'disabled' : ''}><option value="monthly" ${original?.billingCycle !== 'yearly' ? 'selected' : ''}>毎月</option><option value="yearly" ${original?.billingCycle === 'yearly' ? 'selected' : ''}>毎年</option></select></div>
+      ${hasEstimate ? `<p class="estimate-detail">${escapeHtml(estimateSource)} <a href="${escapeHtml(preset.sourceUrl)}" target="_blank" rel="noreferrer">料金の根拠を見る</a></p>` : ''}
+      <div class="wizard-error" id="foodError" role="status"></div>
+      <div class="wizard-actions"><button type="button" class="wizard-back" data-back-food>← 生活用品の選択へ</button><div class="wizard-actions-end"><button type="submit" class="button button-primary">${original ? '変更を保存' : '追加して戻る'} <span aria-hidden="true">→</span></button></div></div>
+    </form>
+  </section>`;
+  progressFrame(content, 1, 1, '', '生活用品の金額を登録');
+}
+function renderOtherPage() {
+  const original = editingCustomId ? customDraftEntries.find(item => item.id === editingCustomId) : null;
+  const content = `<section class="step-card">
+    <p class="step-kicker">OPTIONAL · その他</p>
+    <h1 class="step-title">一覧にないサービスを<br>登録しよう。</h1>
+    <p class="step-description">サービス名と料金を入れると、金額に合わせたアイコンをタワーに積み上げるよ。</p>
+    <form id="otherForm" class="custom-form">
+      <div class="field"><label for="otherName">サービス名</label><input id="otherName" name="name" required maxlength="35" value="${escapeHtml(original?.name || '')}" placeholder="例：専門チャンネル"></div>
+      <div class="field"><label for="otherPrice">料金（円）</label><input id="otherPrice" name="price" type="number" min="1" step="1" inputmode="numeric" required value="${original ? Number(original.price) : ''}" placeholder="例：980"></div>
+      <div class="field"><label for="otherCycle">支払い周期</label><select id="otherCycle" name="cycle"><option value="monthly" ${original?.billingCycle !== 'yearly' ? 'selected' : ''}>毎月</option><option value="yearly" ${original?.billingCycle === 'yearly' ? 'selected' : ''}>毎年</option></select></div>
+      <div class="field"><label>アイコン</label><div class="icon-picker">${customIcons.map(option => `<button class="icon-pick${(original?.icon || '▶') === option.icon ? ' selected' : ''}" type="button" data-icon-choice="${escapeHtml(option.icon)}" aria-label="${escapeHtml(option.icon)}を選択" style="background:${option.color}">${option.icon}</button>`).join('')}</div></div>
+      <div class="wizard-error" id="otherError" role="status"></div>
+      <div class="wizard-actions"><button type="button" class="wizard-back" data-back-other>← サービス選択へ</button><div class="wizard-actions-end"><button type="submit" class="button button-primary">${original ? '変更を保存' : '追加して戻る'} <span aria-hidden="true">→</span></button></div></div>
+    </form>
+  </section>`;
+  const nav = '';
+  progressFrame(content, 1, 1, nav, `${activeCategoryLabel()}サブスクを自由に追加`);
+}
+function renderWizard(shouldScroll = false) {
+  if (wizardPage === 'plans') renderPlanPage();
+  else if (wizardPage === 'food-amount') renderFoodAmountPage();
+  else if (wizardPage === 'other') renderOtherPage();
+  else renderServicePage();
+  if (shouldScroll) window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function finishWizard() {
+  const next = [];
+  for (const service of catalog) {
+    if (!selectedServices.has(service.name)) continue;
+    const previous = entries.find(item => item.name === service.name);
+    const planId = planChoices[service.name] || previous?.planId || service.plans[0].id;
+    const plan = service.plans.find(item => item.id === planId) || service.plans[0];
+    next.push(makeEntry(service, plan, previous?.id || ''));
+  }
+  for (const custom of customDraftEntries) {
+    if (selectedCustomIds.has(custom.id)) next.push({ ...custom, category: custom.category || 'video' });
+  }
+  entries = next;
+  persistEntries();
+  showWelcome = false;
+  showResults = true;
+  showReview = false;
+  renderApp();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function completeActiveCategory() {
+  const index = categoryOrder.indexOf(activeCategory);
+  if (index >= 0 && index < categoryOrder.length - 1) {
+    activeCategory = categoryOrder[index + 1];
+    wizardPage = 'services';
+    renderWizard(true);
+  } else {
+    finishWizard();
+  }
+}
+function saveFoodForm(event) {
+  event.preventDefault();
+  const form = event.target;
+  const mode = form.elements.priceMode.value;
+  if (mode === 'actual' && !form.reportValidity()) return;
+  const preset = foodFormPreset;
+  const name = form.elements.name.value.trim();
+  const price = mode === 'estimate' ? preset?.averagePrice : Number(form.elements.price.value);
+  const cycle = mode === 'estimate' ? 'monthly' : form.elements.cycle.value;
+  if (!name || !price || price < 1) return;
+    const duplicate = customDraftEntries.find(item => item.category === 'living' && item.name.toLowerCase() === name.toLowerCase() && item.id !== editingCustomId);
+  if (duplicate) {
+    $('#foodError').textContent = '同じサービスが登録されています。登録済みの行から金額を編集できます。';
+    return;
+  }
+  const entryData = {
+    name, category: 'living', price, billingCycle: cycle,
+    planId: mode === 'estimate' ? 'food-estimate' : 'food-actual',
+    planName: mode === 'estimate' ? preset.averagePlan : '入力した金額',
+    priceSource: mode === 'estimate' ? 'estimate' : 'actual',
+    ...(preset ? { foodPresetId: preset.id, icon: preset.icon, color: preset.color } : { icon: '🥗', color: '#d7edcf' })
+  };
+  if (editingCustomId) {
+    customDraftEntries = customDraftEntries.map(item => item.id === editingCustomId ? { ...item, ...entryData } : item);
+  } else {
+    const entry = { id: createId(), ...entryData };
+    customDraftEntries.push(entry);
+    selectedCustomIds.add(entry.id);
+  }
+  editingCustomId = null;
+  foodFormPreset = null;
+  wizardPage = 'services';
+  renderWizard(true);
+}
+function startCustomForm(item = null) {
+  editingCustomId = item?.id || null;
+  foodFormPreset = null;
+  wizardPage = 'other';
+  renderWizard(true);
+}
+function saveCustomForm(event) {
+  event.preventDefault();
+  const form = event.target;
+  if (!form.reportValidity()) return;
+  const name = form.elements.name.value.trim();
+  const price = Number(form.elements.price.value);
+  const cycle = form.elements.cycle.value;
+  const selectedIcon = form.querySelector('.icon-pick.selected')?.dataset.iconChoice || '▶';
+  const icon = customIcons.find(option => option.icon === selectedIcon) || customIcons[0];
+  if (!name || price < 1) return;
+  if (findService(name)) {
+    $('#otherError').textContent = '一覧にあるサービスは、サービス選択画面から選んでください。';
+    return;
+  }
+  const duplicate = customDraftEntries.find(item => item.category === activeCategory && item.name.toLowerCase() === name.toLowerCase() && item.id !== editingCustomId);
+  if (duplicate) {
+    $('#otherError').textContent = '同じ名前のサービスが登録されています。';
+    return;
+  }
+  if (editingCustomId) {
+    customDraftEntries = customDraftEntries.map(item => item.id === editingCustomId ? {
+      ...item, name, category: activeCategory, price, billingCycle: cycle, planId: 'custom', planName: '自分で登録', icon: icon.icon, color: icon.color
+    } : item);
+  } else {
+    const entry = { id: createId(), name, category: activeCategory, price, billingCycle: cycle, planId: 'custom', planName: '自分で登録', icon: icon.icon, color: icon.color };
+    customDraftEntries.push(entry);
+    selectedCustomIds.add(entry.id);
+  }
+  editingCustomId = null;
+  wizardPage = 'services';
+  renderWizard(true);
+}
+
+wizardStage.addEventListener('click', event => {
+  const serviceChoice = event.target.closest('[data-service-toggle]');
+  if (serviceChoice) {
+    const name = serviceChoice.dataset.serviceToggle;
+    selectedServices.has(name) ? selectedServices.delete(name) : selectedServices.add(name);
+    const active = selectedServices.has(name);
+    serviceChoice.classList.toggle('selected', active);
+    serviceChoice.setAttribute('aria-pressed', String(active));
+    serviceChoice.querySelector('.choice-check').textContent = active ? '✓' : '';
+    updateServiceSelectionSummary();
+    return;
+  }
+  if (event.target.closest('[data-add-other]')) {
+    startCustomForm();
+    return;
+  }
+  const foodPresetButton = event.target.closest('[data-food-preset]');
+  if (foodPresetButton) {
+    startFoodForm(foodPresetButton.dataset.foodPreset);
+    return;
+  }
+  const editFoodButton = event.target.closest('[data-edit-food]');
+  if (editFoodButton) {
+    const item = customDraftEntries.find(entry => entry.id === editFoodButton.dataset.editFood);
+    if (item) startFoodForm('', item);
+    return;
+  }
+  const planChoice = event.target.closest('[data-plan-choice]');
+  if (planChoice) {
+    const service = planQueue[planIndex];
+    if (service) {
+      planChoices[service.name] = planChoice.dataset.planChoice;
+      wizardStage.querySelectorAll('[data-plan-choice]').forEach(option => {
+        const active = option.dataset.planChoice === planChoices[service.name];
+        option.classList.toggle('selected', active);
+        option.setAttribute('aria-pressed', String(active));
+      });
+    }
+    return;
+  }
+  if (event.target.closest('[data-next-services]')) {
+    preparePlanQueue();
+    if (planQueue.length) {
+      wizardPage = 'plans';
+      renderWizard(true);
+    } else completeActiveCategory();
+    return;
+  }
+  if (event.target.closest('[data-next-plan]')) {
+    if (planIndex < planQueue.length - 1) {
+      planIndex++;
+      renderWizard(true);
+    } else completeActiveCategory();
+    return;
+  }
+  if (event.target.closest('[data-back-plan]')) {
+    if (planIndex > 0) planIndex--;
+    else wizardPage = 'services';
+    renderWizard(true);
+    return;
+  }
+  if (event.target.closest('[data-back-other]')) {
+    editingCustomId = null;
+    wizardPage = 'services';
+    renderWizard(true);
+    return;
+  }
+  if (event.target.closest('[data-back-category]')) {
+    const index = categoryOrder.indexOf(activeCategory);
+    if (index > 0) activeCategory = categoryOrder[index - 1];
+    wizardPage = 'services';
+    renderWizard(true);
+    return;
+  }
+  if (event.target.closest('[data-back-food]')) {
+    editingCustomId = null;
+    foodFormPreset = null;
+    wizardPage = 'services';
+    renderWizard(true);
+    return;
+  }
+  if (event.target.closest('[data-cancel-edit]')) {
+    showWelcome = false;
+    showResults = true;
+    showReview = false;
+    renderApp();
+  }
+  const iconChoice = event.target.closest('[data-icon-choice]');
+  if (iconChoice) {
+    wizardStage.querySelectorAll('.icon-pick').forEach(button => button.classList.toggle('selected', button === iconChoice));
+  }
+});
+wizardStage.addEventListener('change', event => {
+  const priceMode = event.target.closest('input[name="priceMode"]');
+  if (priceMode) {
+    const isEstimate = priceMode.value === 'estimate';
+    const priceField = $('#foodPrice');
+    const cycleField = $('#foodCycle');
+    const priceLabel = wizardStage.querySelector('label[for="foodPrice"]');
+    if (priceField) {
+      const wasEstimate = priceField.disabled;
+      priceField.disabled = isEstimate;
+      priceField.required = !isEstimate;
+      if (isEstimate && foodFormPreset) priceField.value = foodFormPreset.averagePrice;
+      if (!isEstimate && wasEstimate) priceField.value = '';
+    }
+    if (cycleField) cycleField.disabled = isEstimate;
+    if (priceLabel) priceLabel.textContent = isEstimate ? '参考の目安価格' : '実際の料金（円）';
+    wizardStage.querySelectorAll('.price-mode-choice').forEach(choice => choice.classList.toggle('selected', choice.contains(priceMode)));
+    return;
+  }
+  const checkbox = event.target.closest('[data-custom-toggle]');
+  if (!checkbox) return;
+  const id = checkbox.dataset.customToggle;
+  checkbox.checked ? selectedCustomIds.add(id) : selectedCustomIds.delete(id);
+  updateServiceSelectionSummary();
+});
+wizardStage.addEventListener('submit', event => {
+  if (event.target.id === 'otherForm') saveCustomForm(event);
+  if (event.target.id === 'foodForm') saveFoodForm(event);
+});
+$('#editAnswers').addEventListener('click', beginEditing);
+$('#startWizard').addEventListener('click', beginEditing);
+$('#resetAll').addEventListener('click', resetAll);
+reviewStage.addEventListener('click', event => {
+  if (event.target.closest('[data-review-close]')) {
+    returnToResults();
+    return;
+  }
+  const route = event.target.closest('[data-review-route]');
+  if (route) {
+    reviewPage = route.dataset.reviewRoute === 'good' ? 'good' : 'frequency';
+    renderReview();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    return;
+  }
+  if (event.target.closest('[data-review-back]')) {
+    reviewPage = reviewPage === 'decision' ? 'frequency' : 'intro';
+    renderReview();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    return;
+  }
+  const frequencyButton = event.target.closest('[data-review-frequency]');
+  if (frequencyButton) {
+    const { entryId, frequency } = frequencyButton.dataset;
+    reviewFrequency[entryId] = frequency;
+    reviewStage.querySelectorAll('[data-review-frequency]').forEach(button => {
+      if (button.dataset.entryId !== entryId) return;
+      const selected = button.dataset.frequency === frequency;
+      button.classList.toggle('selected', selected);
+      button.setAttribute('aria-pressed', String(selected));
+    });
+    const answered = entries.filter(item => reviewFrequency[item.id]).length;
+    const note = reviewStage.querySelector('.review-note');
+    if (note) note.textContent = `${answered} / ${entries.length} 件回答済み`;
+    const next = reviewStage.querySelector('[data-frequency-next]');
+    if (next) next.disabled = answered < entries.length;
+    return;
+  }
+  if (event.target.closest('[data-frequency-next]')) {
+    if (entries.every(item => reviewFrequency[item.id])) {
+      prepareReviewDecisions();
+      reviewPage = 'decision';
+      renderReview();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    return;
+  }
+  const decisionButton = event.target.closest('[data-review-decision]');
+  if (decisionButton) {
+    const { entryId, decision } = decisionButton.dataset;
+    reviewDecisions[entryId] = decision;
+    reviewStage.querySelectorAll('[data-review-decision]').forEach(button => {
+      if (button.dataset.entryId !== entryId) return;
+      const selected = button.dataset.decision === decision;
+      button.classList.toggle('selected', selected);
+      button.setAttribute('aria-pressed', String(selected));
+    });
+    const decisionItems = entries.filter(needsReviewDecision);
+    const answered = decisionItems.filter(item => reviewDecisions[item.id]).length;
+    const skippedFrequent = entries.length - decisionItems.length;
+    const notes = reviewStage.querySelectorAll('.review-note');
+    const note = [...notes].find(item => item.textContent.includes('件回答済み'));
+    if (note) note.textContent = `${answered} / ${decisionItems.length} 件回答済み${skippedFrequent ? ` · 毎日・週に数回使う ${skippedFrequent} 件は質問を省略` : ''}`;
+    const next = reviewStage.querySelector('[data-decision-finish]');
+    if (next) next.disabled = answered < decisionItems.length;
+    return;
+  }
+  if (event.target.closest('[data-decision-finish]')) {
+    if (entries.filter(needsReviewDecision).every(item => reviewDecisions[item.id])) {
+      reviewPage = 'finish';
+      renderReview();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+});
+resultStage.addEventListener('click', event => {
+  if (event.target.closest('#startSubscriptionReview')) {
+    openSubscriptionReview();
+    return;
+  }
+  if (event.target.closest('[data-review]')) beginEditing();
+  const editButton = event.target.closest('[data-edit-other]');
+  if (editButton) {
+    beginEditing();
+    const item = customDraftEntries.find(entry => entry.id === editButton.dataset.editOther);
+    if (item) {
+      activeCategory = item.category || 'video';
+      startCustomForm(item);
+    }
+  }
+  const foodEditButton = event.target.closest('[data-edit-food]');
+  if (foodEditButton) {
+    beginEditing();
+    const item = customDraftEntries.find(entry => entry.id === foodEditButton.dataset.editFood);
+    if (item) {
+      activeCategory = 'living';
+      startFoodForm('', item);
+    }
+  }
+});
+let towerResizeTimer = 0;
+window.addEventListener('resize', () => {
+  if (!showResults) return;
+  window.clearTimeout(towerResizeTimer);
+  towerResizeTimer = window.setTimeout(renderResults, 120);
+}, { passive: true });
+renderApp();
+
+</script>
+</body>
+</html>
